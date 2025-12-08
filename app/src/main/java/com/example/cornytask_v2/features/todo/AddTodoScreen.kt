@@ -1,5 +1,6 @@
 package com.example.cornytask_v2.features.todo
 
+import android.app.Application
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Column
@@ -22,6 +23,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -29,7 +31,11 @@ import com.example.cornytask_v2.data.Todo
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun AddTodoScreen(onNavigateUp: () -> Unit, viewModel: AddTodoViewModel = viewModel()) {
+fun AddTodoScreen(onNavigateUp: () -> Unit) {
+    val context = LocalContext.current
+    val viewModel: AddTodoViewModel = viewModel(
+        factory = AddTodoViewModelFactory(context.applicationContext as Application)
+    )
     val suggestions by viewModel.suggestions.collectAsState()
 
     Scaffold(
@@ -90,4 +96,3 @@ fun AddTodoScreen(onNavigateUp: () -> Unit, viewModel: AddTodoViewModel = viewMo
     }
 
 }
-

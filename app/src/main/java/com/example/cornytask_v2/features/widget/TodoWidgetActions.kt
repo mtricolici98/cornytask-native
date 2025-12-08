@@ -1,11 +1,11 @@
 package com.example.cornytask_v2.features.widget
 
 import android.app.ActivityOptions
-import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
 import android.graphics.Rect
 import android.os.Build
+import androidx.compose.ui.unit.IntOffset
 import androidx.glance.GlanceId
 import androidx.glance.action.ActionParameters
 import androidx.glance.appwidget.action.ActionCallback
@@ -14,7 +14,6 @@ import com.example.cornytask_v2.features.todo.AddTodoActivity
 import com.example.cornytask_v2.features.todo.TodoRepository
 import com.example.cornytask_v2.features.user.UserRepository
 import com.google.firebase.FirebaseApp
-
 
 const val ACTION_DATA_UPDATED = "com.example.cornytask_v2.ACTION_DATA_UPDATED"
 
@@ -56,7 +55,9 @@ class AddTodoAction : ActionCallback {
         parameters: ActionParameters
     ) {
         val intent = Intent(context, AddTodoActivity::class.java).apply {
-            flags = Intent.FLAG_ACTIVITY_NEW_TASK
+            flags = Intent.FLAG_ACTIVITY_MULTIPLE_TASK or
+                    Intent.FLAG_ACTIVITY_NEW_TASK
+            putExtra("isFromWidget", true)
         }
 
         if (isTablet(context)) {
@@ -66,17 +67,13 @@ class AddTodoAction : ActionCallback {
                 val screenHeight = displayMetrics.heightPixels
 
                 // Desired pop-up size
-                val popupWidth = 600
-                val popupHeight = 400
-
-                // Position it on the right side
-                val left = screenWidth - popupWidth - 50 // 50px margin from right edge
-                val top = 100 // 100px from top
-                val right = left + popupWidth
-                val bottom = top + popupHeight
+                val popupWidth = (screenWidth * 0.4).toInt()
+                val popupHeight = (screenHeight * 0.5).toInt()
+                val left = screenWidth - popupWidth - 50
+                val top = 100
 
                 val options = ActivityOptions.makeBasic()
-                options.launchBounds = Rect(left, top, right, bottom)
+                options.launchBounds = Rect(left, top, left + popupWidth, top + popupHeight)
 
                 context.startActivity(intent, options.toBundle())
             } else {
@@ -91,8 +88,6 @@ class AddTodoAction : ActionCallback {
         return context.resources.configuration.smallestScreenWidthDp >= 600
     }
 }
-
-
 
 class OpenAppAction : ActionCallback {
     override suspend fun onAction(context: Context, glanceId: GlanceId, parameters: ActionParameters) {

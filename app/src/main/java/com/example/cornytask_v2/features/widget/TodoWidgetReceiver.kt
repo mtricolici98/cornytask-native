@@ -45,6 +45,10 @@ class TodoWidgetReceiver : GlanceAppWidgetReceiver() {
         super.onDisabled(context)
         WorkManager.getInstance(context).cancelUniqueWork("TodoWidgetWorker")
     }
+
+    companion object {
+        private const val ACTION_DATA_UPDATED = "com.example.cornytask_v2.ACTION_DATA_UPDATED"
+    }
 }
 
 fun enqueueDataUpdateWorker(context: Context) {

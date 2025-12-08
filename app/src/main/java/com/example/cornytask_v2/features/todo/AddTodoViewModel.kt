@@ -1,18 +1,21 @@
 package com.example.cornytask_v2.features.todo
 
+import android.app.Application
+import android.content.Intent
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
-import androidx.lifecycle.ViewModel
+import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.cornytask_v2.data.Todo
+import com.example.cornytask_v2.features.widget.TodoWidgetReceiver
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 
-class AddTodoViewModel : ViewModel() {
+class AddTodoViewModel(application: Application) : AndroidViewModel(application) {
 
     private val repository = TodoRepository()
 
@@ -48,8 +51,16 @@ class AddTodoViewModel : ViewModel() {
             val coins = rewardCoins.toIntOrNull() ?: 0
             if (title.isNotBlank() && coins > 0) {
                 repository.addTodo(title, description, coins)
+                broadcastUpdate()
                 onSuccess()
             }
         }
+    }
+
+    private fun broadcastUpdate() {
+        val intent = Intent(getApplication(), TodoWidgetReceiver::class.java).apply {
+            action = "com.example.cornytask_v2.ACTION_DATA_UPDATED"
+        }
+        getApplication<Application>().sendBroadcast(intent)
     }
 }
