@@ -55,6 +55,10 @@ dependencies {
     implementation(libs.play.services.auth)
     implementation(libs.androidx.lifecycle.viewmodel.compose)
 
+    // Glance
+    implementation("androidx.glance:glance-appwidget:1.1.0")
+    implementation("androidx.glance:glance-material3:1.1.0")
+
     // Firebase
     implementation(platform("com.google.firebase:firebase-bom:34.6.0"))
     implementation(libs.firebase.auth)

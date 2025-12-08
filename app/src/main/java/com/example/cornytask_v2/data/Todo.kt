@@ -8,6 +8,7 @@ data class Todo(
     val id: String = "",
     val title: String = "",
     val description: String = "",
+    val keywords: List<String> = emptyList(),
     val rewardCoins: Int = 0,
     @get:PropertyName("isCompleted") // Explicitly map the 'isCompleted' field
     @set:PropertyName("isCompleted")

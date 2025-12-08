@@ -22,29 +22,25 @@ private val DarkColorScheme = darkColorScheme(
 )
 
 private val LightColorScheme = lightColorScheme(
-    primary = SoftPink,
+    primary = SoftPink, // Main button color
+    onPrimary = Purple40, // Text on main buttons
+    primaryContainer = SoftPink, // FAB color
+    onPrimaryContainer = Purple40, // Icon on FAB
     secondary = DeepPink,
     tertiary = LightPink,
     background = Color.White,
     surface = Color.White,
+    surfaceVariant = LightPink, // For cards, inactive elements
+    onSurfaceVariant = Purple40 // Text on cards, etc.
 )
 
 @Composable
 fun Cornytaskv2Theme(
     darkTheme: Boolean = false, // Always use light theme
-    // Dynamic color is available on Android 12+
     dynamicColor: Boolean = false, // Disabled to use our custom theme
     content: @Composable () -> Unit
 ) {
-    val colorScheme = when {
-        dynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> {
-            val context = LocalContext.current
-            if (darkTheme) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
-        }
-
-        darkTheme -> DarkColorScheme
-        else -> LightColorScheme
-    }
+    val colorScheme = LightColorScheme // Always use our custom light scheme
     val view = LocalView.current
     if (!view.isInEditMode) {
         SideEffect {
@@ -58,7 +54,7 @@ fun Cornytaskv2Theme(
     MaterialTheme(
         colorScheme = colorScheme,
         typography = Typography,
-        shapes = Shapes, // Using the new Shapes
+        shapes = Shapes,
         content = content
     )
 }

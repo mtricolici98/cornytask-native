@@ -63,6 +63,15 @@ class UserRepository {
         }
     }
 
+    // One-shot fetch for widget
+    suspend fun fetchCurrentUser(): User? {
+        val user = auth.currentUser ?: return null
+        return try {
+            firestore.collection("users").document(user.uid).get().await().toObject(User::class.java)
+        } catch (e: Exception) {
+            null
+        }
+    }
 
     suspend fun addCoins(amount: Int) {
         val uid = auth.currentUser?.uid ?: return

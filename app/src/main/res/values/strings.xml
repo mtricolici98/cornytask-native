@@ -1,3 +1,4 @@
 <resources>
-    <string name="app_name">cornytask-v2</string>
+    <string name="app_name">Corny Task</string>
+    <string name="widget_description">A widget to display your TODOs.</string>
 </resources>

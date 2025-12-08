@@ -21,45 +21,67 @@ class TodoRepository {
         var snapshotListener: ListenerRegistration? = null
 
         val authListener = FirebaseAuth.AuthStateListener { firebaseAuth ->
-            // Whenever auth state changes, remove the old listener to prevent leaks
             snapshotListener?.remove()
-
             val user = firebaseAuth.currentUser
             if (user == null) {
-                // If user logs out, send an empty list and we'''re done.
                 trySend(emptyList())
             } else {
-                // If user logs in, create a new Firestore listener for their data.
                 val collection = firestore.collection("users").document(user.uid).collection("todos")
                 snapshotListener = collection
                     .orderBy("createdAt", Query.Direction.DESCENDING)
                     .addSnapshotListener { snapshot, error ->
                         if (error != null) {
-                            close(error) // Close the flow on error
+                            close(error)
                             return@addSnapshotListener
                         }
-                        // Map the documents, making sure to include the ID
                         val todos = snapshot?.documents?.mapNotNull {
                             it.toObject(Todo::class.java)?.copy(id = it.id)
                         } ?: emptyList()
-
-                        trySend(todos) // Send the latest list of todos
+                        trySend(todos)
                     }
             }
         }
 
-        // Start listening for authentication changes.
-        // This will also trigger immediately with the current auth state.
         auth.addAuthStateListener(authListener)
 
-        // When the flow is cancelled (e.g., ViewModel is cleared),
-        // remove both listeners to prevent memory leaks.
         awaitClose {
             snapshotListener?.remove()
             auth.removeAuthStateListener(authListener)
         }
     }
 
+    // One-shot fetch for widget
+    suspend fun fetchAllTodos(): List<Todo> {
+        val user = auth.currentUser ?: return emptyList()
+        return try {
+            firestore.collection("users").document(user.uid).collection("todos")
+                .orderBy("createdAt", Query.Direction.DESCENDING)
+                .get()
+                .await()
+                .documents.mapNotNull {
+                    it.toObject(Todo::class.java)?.copy(id = it.id)
+                }
+        } catch (e: Exception) {
+            emptyList()
+        }
+    }
+
+    suspend fun addTodo(title: String, description: String, rewardCoins: Int) {
+        val uid = auth.currentUser?.uid ?: return
+        val keywords = title.lowercase().split(" ").filter { it.isNotBlank() }
+        val todo = Todo(title = title, description = description, rewardCoins = rewardCoins, keywords = keywords)
+        firestore.collection("users").document(uid).collection("todos").add(todo).await()
+    }
+
+    suspend fun getSuggestions(query: String): List<Todo> {
+        val uid = auth.currentUser?.uid ?: return emptyList()
+        return firestore.collection("users").document(uid).collection("todos")
+            .whereArrayContains("keywords", query.lowercase())
+            .limit(5)
+            .get()
+            .await()
+            .toObjects(Todo::class.java)
+    }
 
     suspend fun updateTodoStatus(todo: Todo, isCompleted: Boolean) {
         val uid = auth.currentUser?.uid ?: return
