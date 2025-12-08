@@ -30,6 +30,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.cornytask_v2.R
 import com.example.cornytask_v2.data.Todo
+import com.example.cornytask_v2.ui.theme.Purple40
 
 @Composable
 fun TodoScreen(viewModel: TodoViewModel = viewModel(factory = TodoViewModelFactory(LocalContext.current))) {
@@ -59,12 +60,12 @@ fun TodoScreen(viewModel: TodoViewModel = viewModel(factory = TodoViewModelFacto
             text = { Text("You can choose to reset the TODO, marking it as unfinished but keeping your coins or delete it.") },
             confirmButton = {
                 TextButton(onClick = { viewModel.onDeleteTodo(todo); showDialog = null }) {
-                    Text("Delete")
+                    Text("Delete", color = Purple40)
                 }
             },
             dismissButton = {
                 TextButton(onClick = { viewModel.onResetTodo(todo); showDialog = null }) {
-                    Text("Reset")
+                    Text("Reset", color = Purple40)
                 }
             }
         )

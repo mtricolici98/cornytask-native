@@ -15,6 +15,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import com.example.cornytask_v2.R
 import com.example.cornytask_v2.features.main.MainMenuActivity
+import com.example.cornytask_v2.features.widget.ACTION_DATA_UPDATED
+import com.example.cornytask_v2.features.widget.TodoWidgetReceiver
 import com.example.cornytask_v2.ui.theme.Cornytaskv2Theme
 import com.google.android.gms.auth.api.signin.GoogleSignIn
 import com.google.android.gms.auth.api.signin.GoogleSignInAccount
@@ -91,6 +93,10 @@ class LoginActivity : ComponentActivity() {
     }
 
     private fun navigateToMain() {
+        val intent = Intent(this, TodoWidgetReceiver::class.java).apply {
+            action = ACTION_DATA_UPDATED
+        }
+        sendBroadcast(intent)
         startActivity(Intent(this, MainMenuActivity::class.java))
         finish()
     }

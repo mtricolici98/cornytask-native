@@ -35,12 +35,16 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
+import androidx.datastore.preferences.core.edit
+import androidx.glance.appwidget.GlanceAppWidgetManager
+import androidx.glance.appwidget.state.updateAppWidgetState
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavDestination.Companion.hierarchy
 import androidx.navigation.NavGraph.Companion.findStartDestination
@@ -55,6 +59,8 @@ import com.example.cornytask_v2.features.rewards.RewardsScreen
 import com.example.cornytask_v2.features.todo.AddTodoActivity
 import com.example.cornytask_v2.features.todo.TodoScreen
 import com.example.cornytask_v2.features.user.UserViewModel
+import com.example.cornytask_v2.features.widget.ACTION_DATA_UPDATED
+import com.example.cornytask_v2.features.widget.TodoWidget
 import com.example.cornytask_v2.ui.theme.Cornytaskv2Theme
 import com.example.cornytask_v2.ui.theme.DeepPink
 import com.example.cornytask_v2.ui.theme.LightPink
@@ -62,6 +68,7 @@ import com.example.cornytask_v2.ui.theme.Pink40
 import com.google.android.gms.auth.api.signin.GoogleSignIn
 import com.google.android.gms.auth.api.signin.GoogleSignInClient
 import com.google.android.gms.auth.api.signin.GoogleSignInOptions
+import kotlinx.coroutines.launch
 
 class MainMenuActivity : ComponentActivity() {
 
@@ -103,6 +110,7 @@ fun MainScreen(onSignOut: () -> Unit, userViewModel: UserViewModel = viewModel()
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentDestination = navBackStackEntry?.destination
     val context = LocalContext.current
+    val scope = rememberCoroutineScope()
 
     Scaffold(
         topBar = {
@@ -120,7 +128,18 @@ fun MainScreen(onSignOut: () -> Unit, userViewModel: UserViewModel = viewModel()
                         ) {
                             DropdownMenuItem(
                                 text = { Text("Sign out") },
-                                onClick = onSignOut
+                                onClick = {
+                                    scope.launch {
+                                        GlanceAppWidgetManager(context).getGlanceIds(TodoWidget::class.java).forEach { glanceId ->
+                                            updateAppWidgetState(context, glanceId) {
+                                                it.clear()
+                                            }
+                                        }
+
+                                        context.sendBroadcast(Intent(context, TodoWidget::class.java).setAction(ACTION_DATA_UPDATED))
+                                    }
+                                    onSignOut()
+                                }
                             )
                         }
                     }
