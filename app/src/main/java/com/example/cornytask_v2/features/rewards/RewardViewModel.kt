@@ -10,6 +10,7 @@ import com.example.cornytask_v2.data.User
 import com.example.cornytask_v2.features.user.UserRepository
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
@@ -55,6 +56,18 @@ class RewardViewModel : ViewModel() {
     fun onDeleteReward(reward: Reward) {
         viewModelScope.launch {
             rewardRepository.deleteReward(reward.id)
+        }
+    }
+
+    fun onToggleFavorite(reward: Reward) {
+        viewModelScope.launch {
+            val currentFavorites = rewards.first().count { it.isFavorite }
+            if (!reward.isFavorite && currentFavorites >= 3) {
+                // Optionally, show a message to the user that they can't have more than 3 favorites.
+                return@launch
+            }
+            val updatedReward = reward.copy(isFavorite = !reward.isFavorite)
+            rewardRepository.updateReward(updatedReward)
         }
     }
 }

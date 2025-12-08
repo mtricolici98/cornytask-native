@@ -16,10 +16,13 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.outlined.Star
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -60,7 +63,8 @@ fun RewardsScreen(viewModel: RewardViewModel = viewModel()) {
                         reward = reward,
                         currentCoins = currentCoins,
                         onRedeem = { viewModel.onRedeemReward(reward); showRedeemedDialog = reward },
-                        onLongPress = { showDeleteDialog = reward }
+                        onLongPress = { showDeleteDialog = reward },
+                        onToggleFavorite = { viewModel.onToggleFavorite(reward) }
                     )
                 }
             }
@@ -112,7 +116,8 @@ private fun RewardItem(
     reward: Reward,
     currentCoins: Int,
     onRedeem: () -> Unit,
-    onLongPress: () -> Unit
+    onLongPress: () -> Unit,
+    onToggleFavorite: () -> Unit
 ) {
     val needed = reward.cost - currentCoins
     val trailingText = if (needed > 0) "Need $needed" else "Redeem"
@@ -120,6 +125,15 @@ private fun RewardItem(
     ListItem(
         headlineContent = { Text(reward.title) },
         supportingContent = { Text("Cost: ${reward.cost} unicorns") },
+        leadingContent = {
+            IconButton(onClick = onToggleFavorite) {
+                Icon(
+                    imageVector = if (reward.isFavorite) Icons.Filled.Star else Icons.Outlined.Star,
+                    contentDescription = "Favorite",
+                    tint = if (reward.isFavorite) Color.Yellow else Color.Gray
+                )
+            }
+        },
         trailingContent = {
             Button(onClick = onRedeem, enabled = needed <= 0) {
                 Text(trailingText)

@@ -3,16 +3,24 @@ package com.example.cornytask_v2.features.todo
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Checkbox
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.ListItem
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -29,15 +37,31 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.cornytask_v2.R
+import com.example.cornytask_v2.data.Reward
 import com.example.cornytask_v2.data.Todo
+import com.example.cornytask_v2.features.rewards.RewardViewModel
 import com.example.cornytask_v2.ui.theme.Purple40
 
 @Composable
-fun TodoScreen(viewModel: TodoViewModel = viewModel(factory = TodoViewModelFactory(LocalContext.current))) {
-    val todos by viewModel.todos.collectAsState()
+fun TodoScreen(
+    todoViewModel: TodoViewModel = viewModel(factory = TodoViewModelFactory(LocalContext.current)),
+    rewardViewModel: RewardViewModel = viewModel()
+) {
+    val todos by todoViewModel.todos.collectAsState()
+    val user by todoViewModel.user.collectAsState()
+    val rewards by rewardViewModel.rewards.collectAsState()
     var showDialog by remember { mutableStateOf<Todo?>(null) }
 
-    Box(modifier = Modifier.fillMaxSize()) {
+    val favoriteRewards = rewards.filter { it.isFavorite }
+    val currentCoins = user?.coins ?: 0
+
+    Column(modifier = Modifier.fillMaxSize()) {
+        if (favoriteRewards.isNotEmpty()) {
+            FavoriteRewardsProgress(
+                favoriteRewards = favoriteRewards,
+                currentCoins = currentCoins
+            )
+        }
         if (todos.isEmpty()) {
             Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                 Text("You have not created any TODOs yet.")
@@ -46,7 +70,7 @@ fun TodoScreen(viewModel: TodoViewModel = viewModel(factory = TodoViewModelFacto
             LazyColumn(modifier = Modifier.fillMaxSize()) {
                 items(todos, key = { todo -> todo.id }) { todo ->
                     TodoItem(todo = todo, onLongPress = { showDialog = todo }) { isChecked ->
-                        viewModel.onTodoCompleted(todo, isChecked)
+                        todoViewModel.onTodoCompleted(todo, isChecked)
                     }
                 }
             }
@@ -59,16 +83,48 @@ fun TodoScreen(viewModel: TodoViewModel = viewModel(factory = TodoViewModelFacto
             title = { Text("What do you want to do?") },
             text = { Text("You can choose to reset the TODO, marking it as unfinished but keeping your coins or delete it.") },
             confirmButton = {
-                TextButton(onClick = { viewModel.onDeleteTodo(todo); showDialog = null }) {
+                TextButton(onClick = { todoViewModel.onDeleteTodo(todo); showDialog = null }) {
                     Text("Delete", color = Purple40)
                 }
             },
             dismissButton = {
-                TextButton(onClick = { viewModel.onResetTodo(todo); showDialog = null }) {
+                TextButton(onClick = { todoViewModel.onResetTodo(todo); showDialog = null }) {
                     Text("Reset", color = Purple40)
                 }
             }
         )
+    }
+}
+
+@Composable
+private fun FavoriteRewardsProgress(
+    favoriteRewards: List<Reward>,
+    currentCoins: Int
+) {
+    Card(modifier = Modifier
+        .fillMaxWidth()
+        .padding(8.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)) {
+        Column(
+            modifier = Modifier.padding(16.dp),
+        ) {
+            Text("Favorite Rewards Progress", style = androidx.compose.material3.MaterialTheme.typography.titleMedium, color = Purple40)
+            Spacer(modifier = Modifier.height(8.dp))
+            favoriteRewards.sortedByDescending { (currentCoins.toFloat() / it.cost).coerceAtMost(1f) }
+                .forEach { reward ->
+                    val progress = (currentCoins.toFloat() / reward.cost).coerceAtMost(1f)
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(reward.title, modifier = Modifier.weight(1f), color = Purple40)
+                        Text("${(progress * 100).toInt()}%/${reward.cost}", color = Purple40)
+                    }
+                    LinearProgressIndicator(
+                        progress = { (currentCoins.toFloat() / reward.cost).coerceAtMost(1f) },
+                        modifier = Modifier.fillMaxWidth(),
+                        color = Purple40
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                }
+        }
     }
 }
 

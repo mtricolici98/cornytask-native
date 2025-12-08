@@ -115,7 +115,7 @@ fun DayIndicator(date: Date, count: Int, isSelected: Boolean, onClick: () -> Uni
     val color = if (count > 0) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceVariant
     val textColor = if (count > 0) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurfaceVariant
     val modifier = if (isSelected) {
-        Modifier.border(2.dp, MaterialTheme.colorScheme.primary, CircleShape)
+        Modifier.border(2.dp, Purple40, CircleShape)
     } else {
         Modifier
     }

@@ -60,4 +60,9 @@ class RewardRepository {
         val uid = auth.currentUser?.uid ?: return
         firestore.collection("users").document(uid).collection("rewards").document(rewardId).delete().await()
     }
+
+    suspend fun updateReward(reward: Reward) {
+        val uid = auth.currentUser?.uid ?: return
+        firestore.collection("users").document(uid).collection("rewards").document(reward.id).set(reward).await()
+    }
 }

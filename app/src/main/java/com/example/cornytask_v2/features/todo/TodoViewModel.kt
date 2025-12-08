@@ -5,6 +5,7 @@ import android.content.Intent
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.cornytask_v2.data.Todo
+import com.example.cornytask_v2.data.User
 import com.example.cornytask_v2.features.user.UserRepository
 import com.example.cornytask_v2.features.widget.ACTION_DATA_UPDATED
 import kotlinx.coroutines.flow.SharingStarted
@@ -20,6 +21,9 @@ class TodoViewModel(private val context: Context) : ViewModel() {
     val todos: StateFlow<List<Todo>> = todoRepository.getTodosFlow()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
+    val user: StateFlow<User?> = userRepository.getUserFlow()
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
+
     fun onTodoCompleted(todo: Todo, isCompleted: Boolean) {
         viewModelScope.launch {
             todoRepository.updateTodoStatus(todo, isCompleted)
@@ -29,7 +33,7 @@ class TodoViewModel(private val context: Context) : ViewModel() {
             } else {
                 userRepository.spendCoins(todo.rewardCoins)
             }
-            
+
             // Notify the widget that data has changed
             sendDataUpdatedBroadcast()
         }
