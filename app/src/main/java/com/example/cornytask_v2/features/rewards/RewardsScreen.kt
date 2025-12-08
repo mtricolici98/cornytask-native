@@ -1,5 +1,7 @@
 package com.example.cornytask_v2.features.rewards
 
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -10,20 +12,25 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.outlined.Star
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.ListItem
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TextField
@@ -39,8 +46,33 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.window.Dialog
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.cornytask_v2.data.Reward
+import com.example.cornytask_v2.ui.theme.DeepPink
+import com.example.cornytask_v2.ui.theme.Purple40
+import com.example.cornytask_v2.ui.theme.SoftPink
+import java.util.concurrent.TimeUnit
+import nl.dionsegijn.konfetti.compose.KonfettiView
+import nl.dionsegijn.konfetti.core.Party
+import nl.dionsegijn.konfetti.core.Position
+import nl.dionsegijn.konfetti.core.emitter.Emitter
+
+private val festiveTitles = listOf(
+    "Woohoo!",
+    "Congratulations!",
+    "You earned it!",
+    "Sweet Reward!",
+    "Awesome!"
+)
+
+private val festiveMessages = listOf(
+    "Enjoy your well-deserved {reward}!",
+    "Time to celebrate with your new {reward}!",
+    "All your hard work paid off. Enjoy the {reward}!",
+    "This {reward} is all yours. You're a star!",
+    "Look what you got! A shiny new {reward}."
+)
 
 @Composable
 fun RewardsScreen(viewModel: RewardViewModel = viewModel()) {
@@ -48,6 +80,7 @@ fun RewardsScreen(viewModel: RewardViewModel = viewModel()) {
     val user by viewModel.user.collectAsState()
     var showDeleteDialog by remember { mutableStateOf<Reward?>(null) }
     var showRedeemedDialog by remember { mutableStateOf<Reward?>(null) }
+    val favoriteRewards = rewards.filter { it.isFavorite }
 
     val currentCoins = user?.coins ?: 0
 
@@ -56,13 +89,24 @@ fun RewardsScreen(viewModel: RewardViewModel = viewModel()) {
             CircularProgressIndicator()
         }
     } else {
-        Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
+        Column(modifier = Modifier
+            .fillMaxSize()
+            .padding(8.dp)) {
+            if (favoriteRewards.isNotEmpty()) {
+                FavoriteRewardsProgress(
+                    favoriteRewards = favoriteRewards,
+                    currentCoins = currentCoins
+                )
+            }
             LazyColumn(modifier = Modifier.weight(1f)) {
                 items(rewards, key = { it.id }) { reward ->
                     RewardItem(
                         reward = reward,
                         currentCoins = currentCoins,
-                        onRedeem = { viewModel.onRedeemReward(reward); showRedeemedDialog = reward },
+                        onRedeem = {
+                            viewModel.onRedeemReward(reward)
+                            showRedeemedDialog = reward
+                        },
                         onLongPress = { showDeleteDialog = reward },
                         onToggleFavorite = { viewModel.onToggleFavorite(reward) }
                     )
@@ -101,13 +145,46 @@ fun RewardsScreen(viewModel: RewardViewModel = viewModel()) {
     }
 
     showRedeemedDialog?.let { reward ->
-        AlertDialog(
-            onDismissRequest = { showRedeemedDialog = null },
-            icon = { Icon(Icons.Default.CheckCircle, contentDescription = null) },
-            title = { Text("Reward Redeemed!") },
-            text = { Text("Enjoy your ${reward.title}!") },
-            confirmButton = { TextButton(onClick = { showRedeemedDialog = null }) { Text("OK") } }
-        )
+        val randomTitle = remember { festiveTitles.random() }
+        val randomMessage = remember { festiveMessages.random().replace("{reward}", reward.title) }
+        Dialog(onDismissRequest = { showRedeemedDialog = null }) {
+            Box(contentAlignment = Alignment.Center) {
+                Card {
+                    Column(
+                        modifier = Modifier.padding(24.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Text(
+                            text = randomTitle,
+                            style = MaterialTheme.typography.headlineSmall
+                        )
+                        Spacer(Modifier.height(16.dp))
+                        Text(text = randomMessage)
+                        Spacer(Modifier.height(16.dp))
+                        TextButton(onClick = { showRedeemedDialog = null }) {
+                            Text("Yay", color = DeepPink)
+                        }
+                    }
+                }
+
+                KonfettiView(
+                    modifier = Modifier.fillMaxSize(),
+                    parties = remember {
+                        listOf(
+                            Party(
+                                speed = 0f,
+                                maxSpeed = 30f,
+                                damping = 0.9f,
+                                spread = 360,
+                                colors = listOf(0xfce18a, 0xff726d, 0xf4306d, 0xb48def),
+                                emitter = Emitter(duration = 2, TimeUnit.SECONDS).perSecond(100),
+                                position = Position.Relative(0.5, 0.0)
+                            )
+                        )
+                    }
+                )
+            }
+        }
     }
 }
 
@@ -130,7 +207,7 @@ private fun RewardItem(
                 Icon(
                     imageVector = if (reward.isFavorite) Icons.Filled.Star else Icons.Outlined.Star,
                     contentDescription = "Favorite",
-                    tint = if (reward.isFavorite) Color.Yellow else Color.Gray
+                    tint = if (reward.isFavorite) Purple40 else Color.Gray
                 )
             }
         },
@@ -177,3 +254,52 @@ private fun AddRewardSection(
         }
     }
 }
+
+
+@Composable
+private fun FavoriteRewardsProgress(
+    favoriteRewards: List<Reward>,
+    currentCoins: Int,
+) {
+    Card(modifier = Modifier
+        .fillMaxWidth()
+        .padding(8.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)) {
+        Column(
+            modifier = Modifier.padding(8.dp),
+        ) {
+            Text("Favorite Rewards Progress", style = androidx.compose.material3.MaterialTheme.typography.titleMedium, color = Purple40)
+            Spacer(modifier = Modifier.height(4.dp))
+            favoriteRewards.sortedByDescending { (currentCoins.toFloat() / it.cost).coerceAtMost(1f) }
+                .forEach { reward ->
+                    val progress by animateFloatAsState(
+                        targetValue = (currentCoins.toFloat() / reward.cost).coerceAtMost(1f),
+                        label = "progressAnimation"
+                    )
+                    val rawProgress = (currentCoins.toFloat() / reward.cost).coerceAtMost(1f)
+                    if (rawProgress == 1f) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text(reward.title, modifier = Modifier.weight(1f), color = Purple40)
+                            Icon(
+                                imageVector = Icons.Filled.Check,
+                                contentDescription = "Favorite",
+                                tint = DeepPink,
+                                modifier = Modifier.size(18.dp)
+                            )
+                        }
+                    } else {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text(reward.title, modifier = Modifier.weight(1f), color = Purple40)
+                        }
+                    }
+                    LinearProgressIndicator(
+                        progress = { progress },
+                        modifier = Modifier.fillMaxWidth().height(8.dp),
+                        color = Purple40
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                }
+        }
+    }
+}
+

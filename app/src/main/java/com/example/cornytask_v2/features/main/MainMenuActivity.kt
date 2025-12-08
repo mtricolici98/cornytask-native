@@ -4,7 +4,9 @@ import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -117,7 +119,13 @@ fun MainScreen(onSignOut: () -> Unit, userViewModel: UserViewModel = viewModel()
             TopAppBar(
                 title = { Text("CornyTask") },
                 actions = {
-                    user?.let { CoinPill(coins = it.coins) }
+                    user?.let { CoinPill(coins = it.coins, onClick = {navController.navigate(Screen.Rewards.route) {
+                        popUpTo(navController.graph.findStartDestination().id) {
+                            saveState = true
+                        }
+                        launchSingleTop = true
+                        restoreState = true
+                    } }) }
                     Box {
                         IconButton(onClick = { showMenu = !showMenu }) {
                             Icon(Icons.Default.MoreVert, contentDescription = "More")
@@ -191,7 +199,13 @@ fun MainScreen(onSignOut: () -> Unit, userViewModel: UserViewModel = viewModel()
             startDestination = Screen.Todo.route,
             modifier = Modifier.padding(innerPadding)
         ) {
-            composable(Screen.Todo.route) { TodoScreen() }
+            composable(Screen.Todo.route) { TodoScreen(navigateToRewards = { navController.navigate(Screen.Rewards.route) {
+                popUpTo(navController.graph.findStartDestination().id) {
+                    saveState = true
+                }
+                launchSingleTop = true
+                restoreState = true
+            } } ) }
             composable(Screen.Rewards.route) { RewardsScreen() }
             composable(Screen.History.route) { HistoryScreen() }
         }
@@ -199,18 +213,22 @@ fun MainScreen(onSignOut: () -> Unit, userViewModel: UserViewModel = viewModel()
 }
 
 @Composable
-fun CoinPill(coins: Int) {
+fun CoinPill(coins: Int, onClick: () -> Unit) {
+    val animatedCoins by animateFloatAsState(
+        targetValue = coins.toFloat(),
+        label = "animatedCoins"
+    )
     Card(
         shape = CircleShape,
-        modifier = Modifier.padding(end = 8.dp),
+        modifier = Modifier.padding(end = 8.dp).clickable(onClick = onClick),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
+        colors = CardDefaults.cardColors(containerColor = androidx.compose.material3.MaterialTheme.colorScheme.surfaceVariant)
     ) {
         Row(
             modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Text(text = coins.toString(), color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text(text = animatedCoins.toInt().toString(), color = androidx.compose.material3.MaterialTheme.colorScheme.onSurfaceVariant)
             Spacer(Modifier.width(4.dp))
             Image(
                 painter = painterResource(id = R.drawable.unicorn_small),

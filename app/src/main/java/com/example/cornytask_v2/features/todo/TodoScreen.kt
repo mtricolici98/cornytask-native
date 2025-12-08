@@ -1,6 +1,10 @@
 package com.example.cornytask_v2.features.todo
 
+import android.content.Context
+import android.widget.Toast
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -13,6 +17,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyItemScope
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
@@ -42,26 +47,33 @@ import com.example.cornytask_v2.data.Todo
 import com.example.cornytask_v2.features.rewards.RewardViewModel
 import com.example.cornytask_v2.ui.theme.Purple40
 
+private val positiveEmojis = listOf("🎉", "✨", "🚀")
+private val positiveMessages = listOf("Great job!", "You rock!", "Awesome!", "Keep it up!", "Fantastic!")
+private val sadEmojis = listOf("😢", "🙏", "💪", "🤔")
+private val negativeMessages = listOf(
+    "You'll surely do it soon!",
+    "No worries, you'll get it next time!",
+    "It's okay, keep trying!",
+    "One step back, two steps forward!",
+    "Don't give up!"
+)
+
 @Composable
 fun TodoScreen(
     todoViewModel: TodoViewModel = viewModel(factory = TodoViewModelFactory(LocalContext.current)),
-    rewardViewModel: RewardViewModel = viewModel()
+    rewardViewModel: RewardViewModel = viewModel(),
+    navigateToRewards: () -> Unit = {}
 ) {
     val todos by todoViewModel.todos.collectAsState()
     val user by todoViewModel.user.collectAsState()
     val rewards by rewardViewModel.rewards.collectAsState()
     var showDialog by remember { mutableStateOf<Todo?>(null) }
+    val context = LocalContext.current
 
-    val favoriteRewards = rewards.filter { it.isFavorite }
+
     val currentCoins = user?.coins ?: 0
 
     Column(modifier = Modifier.fillMaxSize()) {
-        if (favoriteRewards.isNotEmpty()) {
-            FavoriteRewardsProgress(
-                favoriteRewards = favoriteRewards,
-                currentCoins = currentCoins
-            )
-        }
         if (todos.isEmpty()) {
             Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                 Text("You have not created any TODOs yet.")
@@ -71,6 +83,8 @@ fun TodoScreen(
                 items(todos, key = { todo -> todo.id }) { todo ->
                     TodoItem(todo = todo, onLongPress = { showDialog = todo }) { isChecked ->
                         todoViewModel.onTodoCompleted(todo, isChecked)
+                        makeToast(context, isChecked, todo, rewards, currentCoins)
+
                     }
                 }
             }
@@ -96,37 +110,35 @@ fun TodoScreen(
     }
 }
 
-@Composable
-private fun FavoriteRewardsProgress(
-    favoriteRewards: List<Reward>,
+private fun LazyItemScope.makeToast(
+    context: Context,
+    checked: Boolean,
+    todo: Todo,
+    rewards: List<Reward>,
     currentCoins: Int
 ) {
-    Card(modifier = Modifier
-        .fillMaxWidth()
-        .padding(8.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)) {
-        Column(
-            modifier = Modifier.padding(16.dp),
-        ) {
-            Text("Favorite Rewards Progress", style = androidx.compose.material3.MaterialTheme.typography.titleMedium, color = Purple40)
-            Spacer(modifier = Modifier.height(8.dp))
-            favoriteRewards.sortedByDescending { (currentCoins.toFloat() / it.cost).coerceAtMost(1f) }
-                .forEach { reward ->
-                    val progress = (currentCoins.toFloat() / reward.cost).coerceAtMost(1f)
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text(reward.title, modifier = Modifier.weight(1f), color = Purple40)
-                        Text("${(progress * 100).toInt()}%/${reward.cost}", color = Purple40)
-                    }
-                    LinearProgressIndicator(
-                        progress = { (currentCoins.toFloat() / reward.cost).coerceAtMost(1f) },
-                        modifier = Modifier.fillMaxWidth(),
-                        color = Purple40
-                    )
-                    Spacer(modifier = Modifier.height(8.dp))
-                }
+    if (checked) {
+        // TODO: Handle the reward reached text as a notification instead
+        val anyRewardReached = rewards.count { it -> it.isFavorite && it.cost <= currentCoins }
+        val randomEmoji = positiveEmojis.random()
+        val randomMessage = positiveMessages.random()
+        var rewardReachedText = ""
+        if (anyRewardReached > 1) {
+            rewardReachedText = "\nYou've earned enough for ${anyRewardReached} favourite rewards!"
+        } else if (anyRewardReached == 1) {
+            rewardReachedText = "\nYou've earned enough for one favourite reward!"
         }
+        val toastMessage = "$randomEmoji $randomMessage You've earned ${todo.rewardCoins} coins! $randomEmoji$rewardReachedText"
+        Toast.makeText(context, toastMessage, Toast.LENGTH_SHORT).show()
+    } else {
+        val randomEmoji = sadEmojis.random()
+        val randomMessage = negativeMessages.random()
+        val toastMessage = "$randomEmoji $randomMessage"
+        Toast.makeText(context, toastMessage, Toast.LENGTH_SHORT).show()
     }
+
 }
+
 
 @Composable
 private fun TodoItem(todo: Todo, onLongPress: () -> Unit, onCheckedChange: (Boolean) -> Unit) {
