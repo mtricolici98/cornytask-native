@@ -10,6 +10,8 @@ import com.example.cornytask_v2.features.todo.TodoRepository
 import com.example.cornytask_v2.features.user.UserRepository
 import com.google.firebase.FirebaseApp
 
+const val ACTION_DATA_UPDATED = "com.example.cornytask_v2.ACTION_DATA_UPDATED"
+
 class CompleteTodoAction : ActionCallback {
     override suspend fun onAction(context: Context, glanceId: GlanceId, parameters: ActionParameters) {
         // Safely initialize Firebase only if it hasn'''t been initialized in this process yet.
@@ -34,8 +36,9 @@ class CompleteTodoAction : ActionCallback {
             userRepository.spendCoins(todo.rewardCoins)
         }
 
-        // Refresh the widget to show the latest data
-        TodoWidget().update(context, glanceId)
+        // Instead of updating the UI directly, trigger a background worker
+        // to fetch the latest data and then update the widget.
+        enqueueDataUpdateWorker(context)
     }
 }
 
@@ -45,15 +48,5 @@ class AddTodoAction : ActionCallback {
             flags = Intent.FLAG_ACTIVITY_NEW_TASK
         }
         context.startActivity(intent)
-    }
-}
-
-class RefreshAction : ActionCallback {
-    override suspend fun onAction(context: Context, glanceId: GlanceId, parameters: ActionParameters) {
-        // Safely initialize Firebase only if it hasn'''t been initialized in this process yet.
-        if (FirebaseApp.getApps(context).isEmpty()) {
-            FirebaseApp.initializeApp(context)
-        }
-        TodoWidget().update(context, glanceId)
     }
 }

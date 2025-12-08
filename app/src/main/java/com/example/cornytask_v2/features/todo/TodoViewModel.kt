@@ -1,15 +1,18 @@
 package com.example.cornytask_v2.features.todo
 
+import android.content.Context
+import android.content.Intent
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.cornytask_v2.data.Todo
 import com.example.cornytask_v2.features.user.UserRepository
+import com.example.cornytask_v2.features.widget.ACTION_DATA_UPDATED
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
-class TodoViewModel : ViewModel() {
+class TodoViewModel(private val context: Context) : ViewModel() {
 
     private val todoRepository = TodoRepository()
     private val userRepository = UserRepository()
@@ -19,27 +22,37 @@ class TodoViewModel : ViewModel() {
 
     fun onTodoCompleted(todo: Todo, isCompleted: Boolean) {
         viewModelScope.launch {
-            // First, update the todo status in its own repository
             todoRepository.updateTodoStatus(todo, isCompleted)
 
-            // Then, update the user'''s coins based on the action
             if (isCompleted) {
                 userRepository.addCoins(todo.rewardCoins)
             } else {
                 userRepository.spendCoins(todo.rewardCoins)
             }
+            
+            // Notify the widget that data has changed
+            sendDataUpdatedBroadcast()
         }
     }
 
     fun onDeleteTodo(todo: Todo) {
         viewModelScope.launch {
             todoRepository.deleteTodo(todo)
+            sendDataUpdatedBroadcast()
         }
     }
 
     fun onResetTodo(todo: Todo) {
         viewModelScope.launch {
             todoRepository.resetTodo(todo)
+            sendDataUpdatedBroadcast()
         }
+    }
+
+    private fun sendDataUpdatedBroadcast() {
+        val intent = Intent(context, com.example.cornytask_v2.features.widget.TodoWidgetReceiver::class.java).apply {
+            action = ACTION_DATA_UPDATED
+        }
+        context.sendBroadcast(intent)
     }
 }
