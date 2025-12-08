@@ -2,4 +2,9 @@
 <resources>
 
     <style name="Theme.Cornytaskv2" parent="android:Theme.Material.Light.NoActionBar" />
+    <style name="AppTheme.Dialog" parent="Theme.Material3.DayNight.Dialog.Alert">
+        <item name="android:windowIsTranslucent">true</item>
+        <item name="android:windowCloseOnTouchOutside">true</item>
+    </style>
+
 </resources>

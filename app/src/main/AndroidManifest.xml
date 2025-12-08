@@ -6,9 +6,9 @@
         android:allowBackup="true"
         android:dataExtractionRules="@xml/data_extraction_rules"
         android:fullBackupContent="@xml/backup_rules"
-        android:icon="@mipmap/ic_launcher"
+        android:icon="@drawable/unicorn_logo"
         android:label="@string/app_name"
-        android:roundIcon="@mipmap/ic_launcher_round"
+        android:roundIcon="@drawable/unicorn_logo"
         android:supportsRtl="true"
         android:theme="@style/Theme.Cornytaskv2">
 
@@ -23,6 +23,16 @@
                 android:name="android.appwidget.provider"
                 android:resource="@xml/todo_widget_info" />
         </receiver>
+        
+        <receiver
+            android:name=".features.actions.AddTaskReceiver"
+            android:exported="true"
+            tools:ignore="ExportedReceiver">
+            <intent-filter>
+                <action android:name="custom.actions.intent.ADD_CORNY_TASK" />
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+        </receiver>
 
         <activity
             android:name=".features.login.LoginActivity"
@@ -31,12 +41,16 @@
             android:theme="@style/Theme.Cornytaskv2" />
         <activity
             android:name=".features.main.MainMenuActivity"
-            android:exported="false"
+            android:exported="true"
             android:label="Main Menu"
-            android:theme="@style/Theme.Cornytaskv2" />
+            android:theme="@style/Theme.Cornytaskv2" >
+        </activity>
+
         <activity
             android:name=".features.todo.AddTodoActivity"
             android:exported="false"
+            android:resizeableActivity="true"
+            android:launchMode="singleTop"
             android:label="Add Todo"
             android:theme="@style/Theme.Cornytaskv2" />
 
@@ -50,6 +64,9 @@
 
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
+            <meta-data
+                android:name="com.google.android.actions"
+                android:resource="@xml/actions" />
         </activity>
     </application>
 

@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string-array name="CornyTaskQueries">
+        <item>create a corny task to {task_title} for {reward_amount} unicorns</item>
+        <item>create a corny task to {task_title}</item>
+    </string-array>
+</resources>
