@@ -1,9 +1,12 @@
 package com.example.cornytask_v2.features.main
 
+import android.Manifest
 import android.content.Intent
+import android.content.pm.PackageManager
+import android.os.Build
 import android.os.Bundle
-import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
@@ -16,6 +19,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -44,7 +48,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
+import androidx.core.content.ContextCompat
 import androidx.datastore.preferences.core.edit
+import androidx.fragment.app.FragmentActivity
 import androidx.glance.appwidget.GlanceAppWidgetManager
 import androidx.glance.appwidget.state.updateAppWidgetState
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -54,10 +60,14 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navigation
 import com.example.cornytask_v2.R
 import com.example.cornytask_v2.features.history.HistoryScreen
 import com.example.cornytask_v2.features.login.LoginActivity
+import com.example.cornytask_v2.features.more.MoreScreen
+import com.example.cornytask_v2.features.notes.NotesScreen
 import com.example.cornytask_v2.features.rewards.RewardsScreen
+import com.example.cornytask_v2.features.timer.TimerScreen
 import com.example.cornytask_v2.features.todo.AddTodoActivity
 import com.example.cornytask_v2.features.todo.TodoScreen
 import com.example.cornytask_v2.features.user.UserViewModel
@@ -71,10 +81,26 @@ import com.google.android.gms.auth.api.signin.GoogleSignIn
 import com.google.android.gms.auth.api.signin.GoogleSignInClient
 import com.google.android.gms.auth.api.signin.GoogleSignInOptions
 import kotlinx.coroutines.launch
+import com.example.cornytask_v2.features.main.MoreScreen as MoreScreenItems
 
-class MainMenuActivity : ComponentActivity() {
+class MainMenuActivity : FragmentActivity() {
 
     private lateinit var googleSignInClient: GoogleSignInClient
+
+    private val requestPermissionLauncher = registerForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { isGranted: Boolean ->
+        if (isGranted) {
+            // Permission is granted. Continue the action or workflow in your
+            // app.
+        } else {
+            // Explain to the user that the feature is unavailable because the
+            // feature requires a permission that the user has denied. At the
+            // same time, respect the user's decision. Don't link to system
+            // settings in an effort to convince the user to change their
+            // decision.
+        }
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -89,6 +115,26 @@ class MainMenuActivity : ComponentActivity() {
         setContent {
             Cornytaskv2Theme {
                 MainScreen(onSignOut = ::signOut)
+            }
+        }
+
+        askNotificationPermission()
+    }
+
+    private fun askNotificationPermission() {
+        // This is only necessary for API level 33+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            if (ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) ==
+                PackageManager.PERMISSION_GRANTED
+            ) {
+                // FCM SDK (and your app) can post notifications.
+            } else if (shouldShowRequestPermissionRationale(Manifest.permission.POST_NOTIFICATIONS)) {
+                // TODO: Display an educational UI explaining to the user the features that will be enabled
+                //       by them granting the POST_NOTIFICATION permission. This UI should provide the user
+                //       with two options: "Allow" and "Don't allow".
+            } else {
+                // Directly ask for the permission
+                requestPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
             }
         }
     }
@@ -118,6 +164,13 @@ fun MainScreen(onSignOut: () -> Unit, userViewModel: UserViewModel = viewModel()
         topBar = {
             TopAppBar(
                 title = { Text("CornyTask") },
+                navigationIcon = {
+                    if (currentDestination?.parent?.route == Screen.More.route && currentDestination.route != "more_menu") {
+                        IconButton(onClick = { navController.popBackStack() }) {
+                            Icon(Icons.Default.ArrowBack, contentDescription = "Back")
+                        }
+                    }
+                },
                 actions = {
                     user?.let { CoinPill(coins = it.coins, onClick = {navController.navigate(Screen.Rewards.route) {
                         popUpTo(navController.graph.findStartDestination().id) {
@@ -166,7 +219,7 @@ fun MainScreen(onSignOut: () -> Unit, userViewModel: UserViewModel = viewModel()
                 val items = listOf(
                     Screen.Todo,
                     Screen.Rewards,
-                    Screen.History
+                    Screen.More
                 )
                 items.forEach { screen ->
                     NavigationBarItem(
@@ -199,15 +252,14 @@ fun MainScreen(onSignOut: () -> Unit, userViewModel: UserViewModel = viewModel()
             startDestination = Screen.Todo.route,
             modifier = Modifier.padding(innerPadding)
         ) {
-            composable(Screen.Todo.route) { TodoScreen(navigateToRewards = { navController.navigate(Screen.Rewards.route) {
-                popUpTo(navController.graph.findStartDestination().id) {
-                    saveState = true
-                }
-                launchSingleTop = true
-                restoreState = true
-            } } ) }
+            composable(Screen.Todo.route) { TodoScreen( ) }
             composable(Screen.Rewards.route) { RewardsScreen() }
-            composable(Screen.History.route) { HistoryScreen() }
+            navigation(startDestination = "more_menu", route = Screen.More.route) {
+                composable("more_menu") { MoreScreen(navController = navController) }
+                composable(MoreScreenItems.History.route) { HistoryScreen() }
+                composable(MoreScreenItems.Notes.route) { NotesScreen() }
+                composable(MoreScreenItems.Timer.route) { TimerScreen() }
+            }
         }
     }
 }

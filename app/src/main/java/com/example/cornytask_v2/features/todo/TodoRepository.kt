@@ -3,7 +3,6 @@ package com.example.cornytask_v2.features.todo
 import com.example.cornytask_v2.data.History
 import com.example.cornytask_v2.data.Todo
 import com.google.firebase.auth.FirebaseAuth
-import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.ListenerRegistration
 import com.google.firebase.firestore.Query
@@ -28,6 +27,7 @@ class TodoRepository {
             } else {
                 val collection = firestore.collection("users").document(user.uid).collection("todos")
                 snapshotListener = collection
+                    .whereEqualTo("isCompleted", false)
                     .orderBy("createdAt", Query.Direction.DESCENDING)
                     .addSnapshotListener { snapshot, error ->
                         if (error != null) {
@@ -55,6 +55,7 @@ class TodoRepository {
         val user = auth.currentUser ?: return emptyList()
         return try {
             firestore.collection("users").document(user.uid).collection("todos")
+                .whereEqualTo("isCompleted", false)
                 .orderBy("createdAt", Query.Direction.DESCENDING)
                 .get()
                 .await()
@@ -103,11 +104,23 @@ class TodoRepository {
         firestore.collection("users").document(uid).collection("todos").document(todo.id).delete().await()
     }
 
-    suspend fun resetTodo(todo: Todo) {
+    suspend fun getTodo(todoId: String): Todo? {
+        val uid = auth.currentUser?.uid ?: return null
+        return firestore.collection("users").document(uid).collection("todos").document(todoId)
+            .get()
+            .await()
+            .toObject(Todo::class.java)?.copy(id = todoId)
+    }
+
+    suspend fun updateTodo(todoId: String, title: String, description: String, rewardCoins: Int) {
         val uid = auth.currentUser?.uid ?: return
-        firestore.collection("users").document(uid).collection("todos").document(todo.id).update(
-            "isCompleted", false,
-            "createdAt", FieldValue.serverTimestamp()
-        ).await()
+        val keywords = title.lowercase().split(" ").filter { it.isNotBlank() }
+        val todoUpdate = mapOf(
+            "title" to title,
+            "description" to description,
+            "rewardCoins" to rewardCoins,
+            "keywords" to keywords
+        )
+        firestore.collection("users").document(uid).collection("todos").document(todoId).update(todoUpdate).await()
     }
 }

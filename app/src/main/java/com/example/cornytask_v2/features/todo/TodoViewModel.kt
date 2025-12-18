@@ -46,13 +46,6 @@ class TodoViewModel(private val context: Context) : ViewModel() {
         }
     }
 
-    fun onResetTodo(todo: Todo) {
-        viewModelScope.launch {
-            todoRepository.resetTodo(todo)
-            sendDataUpdatedBroadcast()
-        }
-    }
-
     private fun sendDataUpdatedBroadcast() {
         val intent = Intent(context, com.example.cornytask_v2.features.widget.TodoWidgetReceiver::class.java).apply {
             action = ACTION_DATA_UPDATED

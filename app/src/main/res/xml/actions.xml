@@ -4,24 +4,8 @@
     <action intentName="custom.actions.intent.ADD_CORNY_TASK">
         <fulfillment fulfillmentMode="actions.fulfillment.BACKGROUND">
             <parameter-mapping
-                intentParameter="task_title"
-                extraParameterName="task_title" />
-             <parameter-mapping
-                intentParameter="reward_amount"
-                extraParameterName="reward_amount" />
+                intentParameter="thing.name"
+                urlParameter="q"/>
         </fulfillment>
-
-        <capability
-            android:name="custom.actions.intent.ADD_CORNY_TASK"
-            app:queryPatterns="@array/CornyTaskQueries">
-            <parameter
-                android:name="task_title"
-                android:required="true"
-                app:mimeType="text/*" />
-            <parameter
-                android:name="reward_amount"
-                android:required="true"
-                app:mimeType="https://schema.org/Number" />
-        </capability>
     </action>
 </actions>

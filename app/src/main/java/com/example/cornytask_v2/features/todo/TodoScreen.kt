@@ -1,31 +1,23 @@
 package com.example.cornytask_v2.features.todo
 
 import android.content.Context
+import android.content.Intent
 import android.widget.Toast
-import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyItemScope
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Checkbox
-import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.ListItem
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -62,7 +54,6 @@ private val negativeMessages = listOf(
 fun TodoScreen(
     todoViewModel: TodoViewModel = viewModel(factory = TodoViewModelFactory(LocalContext.current)),
     rewardViewModel: RewardViewModel = viewModel(),
-    navigateToRewards: () -> Unit = {}
 ) {
     val todos by todoViewModel.todos.collectAsState()
     val user by todoViewModel.user.collectAsState()
@@ -95,15 +86,20 @@ fun TodoScreen(
         AlertDialog(
             onDismissRequest = { showDialog = null },
             title = { Text("What do you want to do?") },
-            text = { Text("You can choose to reset the TODO, marking it as unfinished but keeping your coins or delete it.") },
+            text = { Text("You can choose to edit or delete the TODO.") },
             confirmButton = {
                 TextButton(onClick = { todoViewModel.onDeleteTodo(todo); showDialog = null }) {
                     Text("Delete", color = Purple40)
                 }
             },
             dismissButton = {
-                TextButton(onClick = { todoViewModel.onResetTodo(todo); showDialog = null }) {
-                    Text("Reset", color = Purple40)
+                TextButton(onClick = {
+                    val intent = Intent(context, EditTodoActivity::class.java)
+                    intent.putExtra("todoId", todo.id)
+                    context.startActivity(intent)
+                    showDialog = null
+                }) {
+                    Text("Edit", color = Purple40)
                 }
             }
         )

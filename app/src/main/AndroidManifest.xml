@@ -2,6 +2,9 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
 
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+
     <application
         android:allowBackup="true"
         android:dataExtractionRules="@xml/data_extraction_rules"
@@ -11,6 +14,11 @@
         android:roundIcon="@drawable/unicorn_logo"
         android:supportsRtl="true"
         android:theme="@style/Theme.Cornytaskv2">
+
+        <service
+            android:name=".features.timer.TimerService"
+            android:enabled="true"
+            android:exported="false" />
 
         <receiver
             android:name=".features.widget.TodoWidgetReceiver"
@@ -23,7 +31,7 @@
                 android:name="android.appwidget.provider"
                 android:resource="@xml/todo_widget_info" />
         </receiver>
-        
+
         <receiver
             android:name=".features.actions.AddTaskReceiver"
             android:exported="true"
@@ -52,6 +60,14 @@
             android:resizeableActivity="true"
             android:launchMode="singleTop"
             android:label="Add Todo"
+            android:theme="@style/Theme.Cornytaskv2" />
+
+        <activity
+            android:name=".features.todo.EditTodoActivity"
+            android:exported="false"
+            android:resizeableActivity="true"
+            android:launchMode="singleTop"
+            android:label="Edit todo"
             android:theme="@style/Theme.Cornytaskv2" />
 
         <activity
