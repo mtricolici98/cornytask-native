@@ -1,4 +1,20 @@
 <?xml version="1.0" encoding="utf-8"?>
-<shortcuts xmlns:android="http://schemas.android.com/apk/res/android">
-
+<shortcuts xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+    <capability
+        android:name="custom.actions.intent.CREATE_CORNY_TASK"
+        app:queryPatterns="@array/create_corny_task_queries">
+        <intent
+            android:action="android.intent.action.VIEW"
+            android:targetClass="com.example.cornytask_v2.features.todo.CreateTodoFromAssistantActivity">
+            <parameter
+                android:name="action"
+                android:key="action"
+                android:required="true"/>
+            <parameter
+                android:name="coins"
+                android:key="coins"
+                android:required="true"/>
+        </intent>
+    </capability>
 </shortcuts>

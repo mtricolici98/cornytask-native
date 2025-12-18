@@ -1,11 +1,3 @@
 <?xml version="1.0" encoding="utf-8"?>
-<actions xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res-auto">
-    <action intentName="custom.actions.intent.ADD_CORNY_TASK">
-        <fulfillment fulfillmentMode="actions.fulfillment.BACKGROUND">
-            <parameter-mapping
-                intentParameter="thing.name"
-                urlParameter="q"/>
-        </fulfillment>
-    </action>
-</actions>
+<resources>
+</resources>

@@ -32,16 +32,6 @@
                 android:resource="@xml/todo_widget_info" />
         </receiver>
 
-        <receiver
-            android:name=".features.actions.AddTaskReceiver"
-            android:exported="true"
-            tools:ignore="ExportedReceiver">
-            <intent-filter>
-                <action android:name="custom.actions.intent.ADD_CORNY_TASK" />
-                <category android:name="android.intent.category.DEFAULT" />
-            </intent-filter>
-        </receiver>
-
         <activity
             android:name=".features.login.LoginActivity"
             android:exported="false"
@@ -52,7 +42,16 @@
             android:exported="true"
             android:label="Main Menu"
             android:theme="@style/Theme.Cornytaskv2" >
+            <meta-data
+                android:name="android.app.shortcuts"
+                android:resource="@xml/shortcuts" />
         </activity>
+
+        <activity
+            android:name=".features.todo.CreateTodoFromAssistantActivity"
+            android:exported="true"
+            android:label="Create todo"
+            android:theme="@style/Theme.Cornytaskv2" />
 
         <activity
             android:name=".features.todo.AddTodoActivity"
@@ -80,9 +79,6 @@
 
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
-            <meta-data
-                android:name="com.google.android.actions"
-                android:resource="@xml/actions" />
         </activity>
     </application>
 

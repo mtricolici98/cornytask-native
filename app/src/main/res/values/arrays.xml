@@ -1,7 +1,19 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string-array name="CornyTaskQueries">
-        <item>create a corny task to {task_title} for {reward_amount} unicorns</item>
-        <item>create a corny task to {task_title}</item>
+    <string-array name="create_corny_task_queries">
+        <!-- Specific queries using the app name -->
+        <item>Create a corny chore to {action} for {coins} unicorns using CornyTask</item>
+        <item>Add a corny chore to {action} for {coins} unicorns on CornyTask</item>
+        <item>Make a corny chore to {action} for {coins} unicorns with CornyTask</item>
+
+        <!-- More general queries -->
+        <item>Create a corny chore to {action} for {coins} unicorns</item>
+        <item>Add a corny chore to {action} for {coins} unicorns</item>
+        <item>Make a corny chore to {action} for {coins} unicorns</item>
+        <item>New corny chore to {action} for {coins} unicorns</item>
+        <item>Create a corny chore {action} for {coins} unicorns</item>
+        <item>Add a corny chore {action} for {coins} unicorns</item>
+        <item>Make a corny chore {action} for {coins} unicorns</item>
+        <item>New corny chore {action} for {coins} unicorns</item>
     </string-array>
 </resources>
