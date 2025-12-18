@@ -14,6 +14,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
+import java.util.Date
 
 class AddTodoViewModel(application: Application) : AndroidViewModel(application) {
 
@@ -22,6 +23,7 @@ class AddTodoViewModel(application: Application) : AndroidViewModel(application)
     var title by mutableStateOf("")
     var description by mutableStateOf("")
     var rewardCoins by mutableStateOf("")
+    var dueDate by mutableStateOf<Date?>(null)
 
     private val _suggestions = MutableStateFlow<List<Todo>>(emptyList())
     val suggestions: StateFlow<List<Todo>> = _suggestions
@@ -43,6 +45,7 @@ class AddTodoViewModel(application: Application) : AndroidViewModel(application)
         title = suggestion.title
         description = suggestion.description
         rewardCoins = suggestion.rewardCoins.toString()
+        dueDate = suggestion.dueDate
         _suggestions.value = emptyList()
     }
 
@@ -50,11 +53,15 @@ class AddTodoViewModel(application: Application) : AndroidViewModel(application)
         viewModelScope.launch {
             val coins = rewardCoins.toIntOrNull() ?: 0
             if (title.isNotBlank() && coins > 0) {
-                repository.addTodo(title, description, coins)
+                repository.addTodo(title, description, coins, dueDate)
                 broadcastUpdate()
                 onSuccess()
             }
         }
+    }
+
+    fun onDueDateChanged(date: Date) {
+        dueDate = date
     }
 
     private fun broadcastUpdate() {

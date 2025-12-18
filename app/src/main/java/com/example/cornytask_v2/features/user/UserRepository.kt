@@ -93,4 +93,9 @@ class UserRepository {
             it.update(userDoc, "coins", newCoins)
         }.await()
     }
+
+    suspend fun updateFcmToken(token: String) {
+        val uid = auth.currentUser?.uid ?: return
+        firestore.collection("users").document(uid).update("fcmToken", token).await()
+    }
 }

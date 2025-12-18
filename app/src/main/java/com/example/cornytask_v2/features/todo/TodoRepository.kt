@@ -10,6 +10,7 @@ import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.tasks.await
+import java.util.Date
 
 class TodoRepository {
 
@@ -67,10 +68,10 @@ class TodoRepository {
         }
     }
 
-    suspend fun addTodo(title: String, description: String, rewardCoins: Int) {
+    suspend fun addTodo(title: String, description: String, rewardCoins: Int, dueDate: Date?) {
         val uid = auth.currentUser?.uid ?: return
         val keywords = title.lowercase().split(" ").filter { it.isNotBlank() }
-        val todo = Todo(title = title, description = description, rewardCoins = rewardCoins, keywords = keywords)
+        val todo = Todo(title = title, description = description, rewardCoins = rewardCoins, keywords = keywords, dueDate = dueDate)
         firestore.collection("users").document(uid).collection("todos").add(todo).await()
     }
 
@@ -112,14 +113,15 @@ class TodoRepository {
             .toObject(Todo::class.java)?.copy(id = todoId)
     }
 
-    suspend fun updateTodo(todoId: String, title: String, description: String, rewardCoins: Int) {
+    suspend fun updateTodo(todoId: String, title: String, description: String, rewardCoins: Int, dueDate: Date?) {
         val uid = auth.currentUser?.uid ?: return
         val keywords = title.lowercase().split(" ").filter { it.isNotBlank() }
         val todoUpdate = mapOf(
             "title" to title,
             "description" to description,
             "rewardCoins" to rewardCoins,
-            "keywords" to keywords
+            "keywords" to keywords,
+            "dueDate" to dueDate
         )
         firestore.collection("users").document(uid).collection("todos").document(todoId).update(todoUpdate).await()
     }

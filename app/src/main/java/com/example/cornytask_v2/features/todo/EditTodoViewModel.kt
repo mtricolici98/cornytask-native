@@ -10,6 +10,7 @@ import androidx.lifecycle.viewModelScope
 import com.example.cornytask_v2.data.Todo
 import com.example.cornytask_v2.features.widget.TodoWidgetReceiver
 import kotlinx.coroutines.launch
+import java.util.Date
 
 class EditTodoViewModel(application: Application) : AndroidViewModel(application) {
 
@@ -19,6 +20,7 @@ class EditTodoViewModel(application: Application) : AndroidViewModel(application
     var title by mutableStateOf("")
     var description by mutableStateOf("")
     var rewardCoins by mutableStateOf("")
+    var dueDate by mutableStateOf<Date?>(null)
 
     fun loadTodo(todoId: String) {
         this.todoId = todoId
@@ -28,8 +30,13 @@ class EditTodoViewModel(application: Application) : AndroidViewModel(application
                 title = it.title
                 description = it.description
                 rewardCoins = it.rewardCoins.toString()
+                dueDate = it.dueDate
             }
         }
+    }
+
+    fun onDueDateChanged(date: Date) {
+        dueDate = date
     }
 
     fun onTitleChanged(newTitle: String) {
@@ -41,7 +48,7 @@ class EditTodoViewModel(application: Application) : AndroidViewModel(application
             val coins = rewardCoins.toIntOrNull() ?: 0
             if (title.isNotBlank() && coins > 0) {
                 todoId?.let {
-                    repository.updateTodo(it, title, description, coins)
+                    repository.updateTodo(it, title, description, coins, dueDate)
                     broadcastUpdate()
                     onSuccess()
                 }

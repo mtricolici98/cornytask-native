@@ -15,5 +15,6 @@ data class Todo(
     var isCompleted: Boolean = false,
     @ServerTimestamp
     val createdAt: Date? = null,
-    val historyId: String? = null
+    val historyId: String? = null,
+    val dueDate: Date? = null
 )

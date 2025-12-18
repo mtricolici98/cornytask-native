@@ -38,6 +38,10 @@ import com.example.cornytask_v2.data.Reward
 import com.example.cornytask_v2.data.Todo
 import com.example.cornytask_v2.features.rewards.RewardViewModel
 import com.example.cornytask_v2.ui.theme.Purple40
+import java.text.SimpleDateFormat
+import java.util.Calendar
+import java.util.Date
+import java.util.Locale
 
 private val positiveEmojis = listOf("🎉", "✨", "🚀")
 private val positiveMessages = listOf("Great job!", "You rock!", "Awesome!", "Keep it up!", "Fantastic!")
@@ -135,12 +139,45 @@ private fun LazyItemScope.makeToast(
 
 }
 
+private fun formatDueDateText(dueDate: Date): String {
+    val now = System.currentTimeMillis()
+    val due = dueDate.time
+    val diff = due - now
+
+    if (diff < 0) return "Overdue"
+
+    val minutes = diff / 1000 / 60
+    val hours = minutes / 60
+
+    val dueCalendar = Calendar.getInstance().apply { time = dueDate }
+    val nowCalendar = Calendar.getInstance()
+
+    val isToday = dueCalendar.get(Calendar.YEAR) == nowCalendar.get(Calendar.YEAR) &&
+            dueCalendar.get(Calendar.DAY_OF_YEAR) == nowCalendar.get(Calendar.DAY_OF_YEAR)
+
+    val isTomorrow = dueCalendar.get(Calendar.YEAR) == nowCalendar.get(Calendar.YEAR) &&
+            dueCalendar.get(Calendar.DAY_OF_YEAR) == nowCalendar.get(Calendar.DAY_OF_YEAR) + 1
+
+    return when {
+        minutes < 60 -> "Due in $minutes minutes"
+        hours < 24 && isToday -> "Due in $hours hours"
+        isTomorrow -> "Tomorrow at ${SimpleDateFormat("HH:mm", Locale.getDefault()).format(dueDate)}"
+        else -> "Due: ${SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()).format(dueDate)}"
+    }
+}
 
 @Composable
 private fun TodoItem(todo: Todo, onLongPress: () -> Unit, onCheckedChange: (Boolean) -> Unit) {
     ListItem(
         headlineContent = { Text(todo.title) },
-        supportingContent = { Text(todo.description) },
+        supportingContent = {
+            Column {
+                Text(todo.description)
+                todo.dueDate?.let {
+                    Text(formatDueDateText(it))
+                }
+            }
+        },
         leadingContent = {
             Checkbox(
                 checked = todo.isCompleted,

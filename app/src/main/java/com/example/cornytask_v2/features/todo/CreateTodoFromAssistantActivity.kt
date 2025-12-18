@@ -15,7 +15,7 @@ class CreateTodoFromAssistantActivity : ComponentActivity() {
         if (action != null && coins != null) {
             val todoRepository = TodoRepository()
             lifecycleScope.launch {
-                todoRepository.addTodo(action, "", coins)
+                todoRepository.addTodo(action, "", coins, null)
                 finish()
             }
         } else {
