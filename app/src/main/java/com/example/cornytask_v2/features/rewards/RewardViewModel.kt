@@ -8,8 +8,10 @@ import androidx.lifecycle.viewModelScope
 import com.example.cornytask_v2.data.Reward
 import com.example.cornytask_v2.data.User
 import com.example.cornytask_v2.features.user.UserRepository
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
@@ -18,6 +20,9 @@ class RewardViewModel : ViewModel() {
 
     private val rewardRepository = RewardRepository()
     private val userRepository = UserRepository()
+
+    private val _events = MutableSharedFlow<RewardScreenEvent>()
+    val events = _events.asSharedFlow()
 
     val rewards: StateFlow<List<Reward>> = rewardRepository.getRewardsFlow()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
@@ -63,11 +68,15 @@ class RewardViewModel : ViewModel() {
         viewModelScope.launch {
             val currentFavorites = rewards.first().count { it.isFavorite }
             if (!reward.isFavorite && currentFavorites >= 3) {
-                // Optionally, show a message to the user that they can't have more than 3 favorites.
+                _events.emit(RewardScreenEvent.ShowToast("Sorry, but you can track up to 3 favourite rewards"))
                 return@launch
             }
             val updatedReward = reward.copy(isFavorite = !reward.isFavorite)
             rewardRepository.updateReward(updatedReward)
         }
     }
+}
+
+sealed class RewardScreenEvent {
+    data class ShowToast(val message: String) : RewardScreenEvent()
 }

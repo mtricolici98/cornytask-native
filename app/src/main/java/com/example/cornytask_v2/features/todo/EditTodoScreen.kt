@@ -8,13 +8,13 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material3.Button
 import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDialog
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
+import androidx.compose.material3.ExposedDropdownMenuBox
+import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -52,6 +52,8 @@ fun EditTodoScreen(onNavigateUp: () -> Unit) {
     var showTimePicker by remember { mutableStateOf(false) }
     val dateFormatter = remember { SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault()) }
     var selectedDate by remember { mutableStateOf<Date?>(null) }
+    var showDueDateOptions by remember { mutableStateOf(false) }
+    val dueDateOptions = listOf("In 1 hour", "In 4 hours", "Tomorrow", "In 2 days", "Custom")
 
 
     LaunchedEffect(todoId) {
@@ -140,22 +142,48 @@ fun EditTodoScreen(onNavigateUp: () -> Unit) {
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            TextField(
-                value = viewModel.dueDate?.let { dateFormatter.format(it) } ?: "",
-                onValueChange = { /* Read-only */ },
-                label = { Text("Due Date") },
-                readOnly = true,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clickable { showDatePicker = true },
-                trailingIcon = {
-                    Icon(
-                        imageVector = Icons.Default.DateRange,
-                        contentDescription = "Select date",
-                        modifier = Modifier.clickable { showDatePicker = true }
-                    )
+            ExposedDropdownMenuBox(
+                expanded = showDueDateOptions,
+                onExpandedChange = { showDueDateOptions = !showDueDateOptions }
+            ) {
+                TextField(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .menuAnchor(),
+                    readOnly = true,
+                    value = viewModel.dueDate?.let { dateFormatter.format(it) } ?: "",
+                    onValueChange = {},
+                    label = { Text("Due Date") },
+                    trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = showDueDateOptions) },
+                )
+                ExposedDropdownMenu(
+                    expanded = showDueDateOptions,
+                    onDismissRequest = { showDueDateOptions = false },
+                ) {
+                    dueDateOptions.forEach { selectionOption ->
+                        DropdownMenuItem(
+                            text = { Text(selectionOption) },
+                            onClick = {
+                                val cal = Calendar.getInstance()
+                                when (selectionOption) {
+                                    "In 1 hour" -> cal.add(Calendar.HOUR_OF_DAY, 1)
+                                    "In 4 hours" -> cal.add(Calendar.HOUR_OF_DAY, 4)
+                                    "Tomorrow" -> cal.add(Calendar.DAY_OF_YEAR, 1)
+                                    "In 2 days" -> cal.add(Calendar.DAY_OF_YEAR, 2)
+                                    "Custom" -> {
+                                        showDatePicker = true
+                                        showDueDateOptions = false
+                                        return@DropdownMenuItem
+                                    }
+                                }
+                                viewModel.onDueDateChanged(cal.time)
+                                showDueDateOptions = false
+                            },
+                            contentPadding = ExposedDropdownMenuDefaults.ItemContentPadding,
+                        )
+                    }
                 }
-            )
+            }
 
             Spacer(modifier = Modifier.height(32.dp))
 
