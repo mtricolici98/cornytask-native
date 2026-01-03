@@ -3,7 +3,6 @@ package com.example.cornytask_v2.features.widget
 import android.content.Context
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.datastore.preferences.core.Preferences
 import androidx.glance.GlanceId
@@ -60,7 +59,13 @@ private fun TodoWidgetContent() {
         TodoInfo(
             title = prefs[TodoWidgetStateKeys.todoTitleKey(index)] ?: "",
             isCompleted = isCompleted,
+            dueDate = prefs[TodoWidgetStateKeys.todoDueDateKey(index)] ?: "",
             reward = prefs[TodoWidgetStateKeys.todoRewardKey(index)] ?: 0,
+            onItemClicked = actionRunCallback<EditTodoAction>(
+                parameters = actionParametersOf(
+                    todoIdKey to id
+                )
+            ),
             onCheckedChange = actionRunCallback<CompleteTodoAction>(
                 parameters = actionParametersOf(
                     todoIdKey to id,
@@ -82,7 +87,9 @@ private data class TodoInfo(
     val title: String,
     val isCompleted: Boolean,
     val reward: Int,
-    val onCheckedChange: Action?
+    val dueDate: String,
+    val onCheckedChange: Action?,
+    val onItemClicked: Action?
 )
 
 @Composable
@@ -142,8 +149,10 @@ private fun TodoWidgetUi(
                         title = todo.title,
                         isCompleted = todo.isCompleted,
                         reward = todo.reward,
+                        dueDate = todo.dueDate,
                         textColor = textColor,
-                        onCheckedChange = todo.onCheckedChange
+                        onCheckedChange = todo.onCheckedChange,
+                        onEditTodo = todo.onItemClicked
                     )
                 }
             }
@@ -168,8 +177,10 @@ private fun TodoWidgetItem(
     title: String,
     isCompleted: Boolean,
     reward: Int,
+    dueDate: String,
     textColor: ColorProvider,
-    onCheckedChange: Action?
+    onCheckedChange: Action?,
+    onEditTodo: Action?
 ) {
     Column {
         Row(
@@ -177,7 +188,7 @@ private fun TodoWidgetItem(
                 .fillMaxWidth()
                 .padding(vertical = 2.dp)
                 .background(ColorProvider(Color(0x80FFFFFF), Color(0x80FFFFFF))) // translucent card look
-                .padding(8.dp),
+                .padding(8.dp).let { if (onEditTodo != null) it.clickable(onEditTodo) else it },
             verticalAlignment = Alignment.CenterVertically
         ) {
             CheckBox(
@@ -193,6 +204,13 @@ private fun TodoWidgetItem(
                 modifier = GlanceModifier.defaultWeight()
             )
 
+            Text(
+                dueDate,
+                style = TextStyle(color = textColor),
+            )
+
+            Spacer(GlanceModifier.width(8.dp))
+
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text("$reward", style = TextStyle(color = textColor))
                 Spacer(GlanceModifier.width(4.dp))
@@ -207,24 +225,6 @@ private fun TodoWidgetItem(
     }
 }
 
-@Preview(showBackground = true)
-@Composable
-fun TodoWidgetPreview() {
-    val todos = (0 until 2).map { index ->
-        TodoInfo(
-            title = "Todo item $index",
-            isCompleted = index % 2 == 0,
-            reward = (index + 1) * 5,
-            onCheckedChange = null
-        )
-    }
-    TodoWidgetUi(
-        userCoins = "120",
-        todos = todos,
-        onOpenApp = null,
-        onAddTodo = null
-    )
-}
 
 val todoIdKey = ActionParameters.Key<String>("todoId")
 val isCompletedKey = ActionParameters.Key<Boolean>("isCompleted")

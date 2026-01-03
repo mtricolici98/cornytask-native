@@ -29,7 +29,6 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.NavigationBarItemDefaults
@@ -49,7 +48,6 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
-import androidx.datastore.preferences.core.edit
 import androidx.fragment.app.FragmentActivity
 import androidx.glance.appwidget.GlanceAppWidgetManager
 import androidx.glance.appwidget.state.updateAppWidgetState
@@ -61,13 +59,15 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navigation
+import com.example.cornytask_v2.MainActivity
 import com.example.cornytask_v2.R
 import com.example.cornytask_v2.features.history.HistoryScreen
 import com.example.cornytask_v2.features.login.LoginActivity
 import com.example.cornytask_v2.features.more.MoreScreen
 import com.example.cornytask_v2.features.notes.NotesScreen
 import com.example.cornytask_v2.features.rewards.RewardsScreen
-import com.example.cornytask_v2.features.timer.TimerScreen
+import com.example.cornytask_v2.features.time_goals.TimeGoalsScreen
+import com.example.cornytask_v2.features.time_goals.TimerScreen
 import com.example.cornytask_v2.features.todo.AddTodoActivity
 import com.example.cornytask_v2.features.todo.TodoScreen
 import com.example.cornytask_v2.features.user.UserViewModel
@@ -159,7 +159,16 @@ fun MainScreen(onSignOut: () -> Unit, userViewModel: UserViewModel = viewModel()
     val currentDestination = navBackStackEntry?.destination
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
-
+    val timeGoalSet = (context as MainMenuActivity).intent.getStringExtra("timeGoalId")
+    if (timeGoalSet != null && timeGoalSet != "") {
+        navController.navigate(Screen.TimeGoals.route) {
+            popUpTo(navController.graph.findStartDestination().id) {
+                saveState = true
+            }
+            launchSingleTop = true
+            restoreState = true
+        }
+    }
     Scaffold(
         topBar = {
             TopAppBar(
@@ -219,6 +228,7 @@ fun MainScreen(onSignOut: () -> Unit, userViewModel: UserViewModel = viewModel()
                 val items = listOf(
                     Screen.Todo,
                     Screen.Rewards,
+                    Screen.TimeGoals,
                     Screen.More
                 )
                 items.forEach { screen ->
@@ -254,11 +264,12 @@ fun MainScreen(onSignOut: () -> Unit, userViewModel: UserViewModel = viewModel()
         ) {
             composable(Screen.Todo.route) { TodoScreen( ) }
             composable(Screen.Rewards.route) { RewardsScreen() }
+            composable(Screen.TimeGoals.route) { TimeGoalsScreen(navController = navController) }
+            composable("timer_screen") { TimerScreen(navController = navController) }
             navigation(startDestination = "more_menu", route = Screen.More.route) {
                 composable("more_menu") { MoreScreen(navController = navController) }
                 composable(MoreScreenItems.History.route) { HistoryScreen() }
                 composable(MoreScreenItems.Notes.route) { NotesScreen() }
-                composable(MoreScreenItems.Timer.route) { TimerScreen() }
             }
         }
     }

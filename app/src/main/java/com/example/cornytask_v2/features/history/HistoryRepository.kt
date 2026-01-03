@@ -8,11 +8,17 @@ import com.google.firebase.firestore.Query
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
+import kotlinx.coroutines.tasks.await
 
 class HistoryRepository {
 
     private val firestore = FirebaseFirestore.getInstance()
     private val auth = FirebaseAuth.getInstance()
+
+    private val historyCollection
+        get() = auth.currentUser?.uid?.let {
+            firestore.collection("users").document(it).collection("history")
+        }
 
     fun getHistoryFlow(): Flow<List<History>> = callbackFlow {
         var snapshotListener: ListenerRegistration? = null
@@ -20,14 +26,12 @@ class HistoryRepository {
         val authListener = FirebaseAuth.AuthStateListener { firebaseAuth ->
             snapshotListener?.remove()
 
-            val user = firebaseAuth.currentUser
-            if (user == null) {
+            if (firebaseAuth.currentUser == null) {
                 trySend(emptyList())
             } else {
-                val collection = firestore.collection("users").document(user.uid).collection("history")
-                snapshotListener = collection
-                    .orderBy("createdAt", Query.Direction.DESCENDING)
-                    .addSnapshotListener { snapshot, error ->
+                snapshotListener = historyCollection
+                    ?.orderBy("createdAt", Query.Direction.DESCENDING)
+                    ?.addSnapshotListener { snapshot, error ->
                         if (error != null) {
                             close(error)
                             return@addSnapshotListener
@@ -47,5 +51,9 @@ class HistoryRepository {
             snapshotListener?.remove()
             auth.removeAuthStateListener(authListener)
         }
+    }
+
+    suspend fun addHistoryEntry(history: History) {
+        historyCollection?.add(history)?.await()
     }
 }

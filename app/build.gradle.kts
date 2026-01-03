@@ -59,6 +59,8 @@ dependencies {
     implementation("androidx.work:work-runtime-ktx:2.11.0")
     implementation("nl.dionsegijn:konfetti-compose:2.0.2")
 
+    debugImplementation("androidx.glance:glance-appwidget-preview:1.0.0")
+
     // Glance
     implementation("androidx.glance:glance-appwidget:1.1.0")
     implementation("androidx.glance:glance-material3:1.1.0")

@@ -13,4 +13,5 @@ object TodoWidgetStateKeys {
     fun todoTitleKey(index: Int): Preferences.Key<String> = stringPreferencesKey("todo_${index}_title")
     fun todoCompletedKey(index: Int): Preferences.Key<Boolean> = booleanPreferencesKey("todo_${index}_completed")
     fun todoRewardKey(index: Int): Preferences.Key<Int> = intPreferencesKey("todo_${index}_reward")
+    fun todoDueDateKey(index: Int): Preferences.Key<String> = stringPreferencesKey("todo_${index}_due_date")
 }

@@ -4,7 +4,7 @@
     android:initialLayout="@layout/widget_initial_layout"
     android:minWidth="250dp"
     android:minHeight="110dp"
-    android:previewImage="@drawable/ic_launcher_foreground"
+    android:previewImage="@drawable/widget_prview"
     android:resizeMode="horizontal|vertical"
     android:targetCellWidth="4"
     android:targetCellHeight="2"

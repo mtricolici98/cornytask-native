@@ -1,0 +1,54 @@
+package com.example.cornytask_v2.features.time_goals
+
+import com.example.cornytask_v2.data.TimeGoal
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.Query
+import kotlinx.coroutines.channels.awaitClose
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.callbackFlow
+import kotlinx.coroutines.tasks.await
+
+class TimeGoalRepository {
+
+    private val firestore = FirebaseFirestore.getInstance()
+    private val auth = FirebaseAuth.getInstance()
+
+    private val timeGoalsCollection
+        get() = firestore.collection("users").document(auth.currentUser!!.uid).collection("timeGoals")
+
+    fun  getTimeGoalsFlow(): Flow<List<TimeGoal>> = callbackFlow {
+        val subscription = timeGoalsCollection
+            .orderBy("createdAt", Query.Direction.DESCENDING)
+            .addSnapshotListener { snapshot, error ->
+                if (error != null) {
+                    close(error)
+                    return@addSnapshotListener
+                }
+                if (snapshot != null) {
+                    val timeGoals = snapshot.toObjects(TimeGoal::class.java)
+                    trySend(timeGoals)
+                }
+            }
+        awaitClose { subscription.remove() }
+    }
+
+    suspend fun addTimeGoal(title: String, totalTimeMinutes: Long, rewardCoins: Int) {
+        val newTimeGoal = TimeGoal(
+            id = timeGoalsCollection.document().id,
+            title = title,
+            totalTimeMinutes = totalTimeMinutes,
+            remainingTimeMinutes = totalTimeMinutes,
+            rewardCoins = rewardCoins
+        )
+        timeGoalsCollection.document(newTimeGoal.id).set(newTimeGoal).await()
+    }
+
+    suspend fun updateTimeGoal(timeGoal: TimeGoal) {
+        timeGoalsCollection.document(timeGoal.id).set(timeGoal).await()
+    }
+
+    suspend fun deleteTimeGoal(timeGoalId: String) {
+        timeGoalsCollection.document(timeGoalId).delete().await()
+    }
+}

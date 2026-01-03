@@ -5,12 +5,13 @@ import android.content.Context
 import android.content.Intent
 import android.graphics.Rect
 import android.os.Build
-import androidx.compose.ui.unit.IntOffset
+import androidx.activity.ComponentActivity
 import androidx.glance.GlanceId
 import androidx.glance.action.ActionParameters
 import androidx.glance.appwidget.action.ActionCallback
 import com.example.cornytask_v2.MainActivity
 import com.example.cornytask_v2.features.todo.AddTodoActivity
+import com.example.cornytask_v2.features.todo.EditTodoActivity
 import com.example.cornytask_v2.features.todo.TodoRepository
 import com.example.cornytask_v2.features.user.UserRepository
 import com.google.firebase.FirebaseApp
@@ -47,19 +48,24 @@ class CompleteTodoAction : ActionCallback {
     }
 }
 
-class AddTodoAction : ActionCallback {
+abstract class PopupActionCallback : ActionCallback {
 
-    override suspend fun onAction(
-        context: Context,
-        glanceId: GlanceId,
-        parameters: ActionParameters
-    ) {
-        val intent = Intent(context, AddTodoActivity::class.java).apply {
+    private fun isTablet(context: Context): Boolean {
+        return context.resources.configuration.smallestScreenWidthDp >= 600
+    }
+
+    fun openActivity(context: Context,
+                    activity: Class<out ComponentActivity>,
+                 todoId: String?) {
+
+        val intent = Intent(context, activity).apply {
             flags = Intent.FLAG_ACTIVITY_MULTIPLE_TASK or
                     Intent.FLAG_ACTIVITY_NEW_TASK
             putExtra("isFromWidget", true)
         }
-
+        if (todoId != null) {
+            intent.putExtra("todoId", todoId)
+        }
         if (isTablet(context)) {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
                 val displayMetrics = context.resources.displayMetrics
@@ -83,9 +89,29 @@ class AddTodoAction : ActionCallback {
             context.startActivity(intent)
         }
     }
+}
 
-    private fun isTablet(context: Context): Boolean {
-        return context.resources.configuration.smallestScreenWidthDp >= 600
+class AddTodoAction : PopupActionCallback() {
+
+    override suspend fun onAction(
+        context: Context,
+        glanceId: GlanceId,
+        parameters: ActionParameters
+    ) {
+       openActivity(context, AddTodoActivity::class.java, todoId = null)
+    }
+
+}
+
+
+class EditTodoAction : PopupActionCallback() {
+
+    override suspend fun onAction(
+        context: Context,
+        glanceId: GlanceId,
+        parameters: ActionParameters
+    ) {
+        openActivity(context, EditTodoActivity::class.java, parameters[todoIdKey])
     }
 }
 
