@@ -6,13 +6,13 @@ plugins {
 }
 
 android {
-    namespace = "com.example.cornytask_v2"
+    namespace = "com.nobadhabbits.cornytask"
     compileSdk {
         version = release(36)
     }
 
     defaultConfig {
-        applicationId = "com.example.cornytask_v2"
+        applicationId = "com.nobadhabbits.cornytask"
         minSdk = 26
         targetSdk = 36
         versionCode = 1

@@ -1,4 +1,4 @@
-package com.example.cornytask_v2
+package com.nobadhabbits.cornytask
 
 import org.junit.Test
 

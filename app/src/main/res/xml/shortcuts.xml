@@ -6,7 +6,7 @@
         app:queryPatterns="@array/create_corny_task_queries">
         <intent
             android:action="android.intent.action.VIEW"
-            android:targetClass="com.example.cornytask_v2.features.todo.CreateTodoFromAssistantActivity">
+            android:targetClass="com.nobadhabbits.cornytask.features.todo.CreateTodoFromAssistantActivity">
             <parameter
                 android:name="action"
                 android:key="action"
