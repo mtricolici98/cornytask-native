@@ -2,6 +2,7 @@ package com.nobadhabbits.cornytask.features.todo
 
 import android.app.Application
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -29,6 +30,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.KeyboardType
@@ -105,7 +107,9 @@ fun EditTodoScreen(onNavigateUp: () -> Unit) {
                 TextButton(onClick = { showTimePicker = false }) { Text("Cancel") }
             }
         ) {
-            TimePicker(state = timePickerState)
+            Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+                TimePicker(state = timePickerState, modifier = Modifier.fillMaxWidth().padding(12.dp))
+            }
         }
     }
 
@@ -117,7 +121,9 @@ fun EditTodoScreen(onNavigateUp: () -> Unit) {
                 value = viewModel.title,
                 onValueChange = { viewModel.onTitleChanged(it) },
                 label = { Text("Title") },
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier.fillMaxWidth(),
+                isError = viewModel.titleError != null,
+                supportingText = { viewModel.titleError?.let { Text(it) } }
             )
 
             Spacer(modifier = Modifier.height(16.dp))
@@ -137,7 +143,9 @@ fun EditTodoScreen(onNavigateUp: () -> Unit) {
                 onValueChange = { viewModel.rewardCoins = it },
                 label = { Text("Reward in Unicorns") },
                 modifier = Modifier.fillMaxWidth(),
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                isError = viewModel.rewardCoinsError != null,
+                supportingText = { viewModel.rewardCoinsError?.let { Text(it) } }
             )
 
             Spacer(modifier = Modifier.height(16.dp))

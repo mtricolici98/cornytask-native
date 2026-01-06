@@ -25,6 +25,9 @@ class AddTodoViewModel(application: Application) : AndroidViewModel(application)
     var rewardCoins by mutableStateOf("")
     var dueDate by mutableStateOf<Date?>(null)
 
+    var titleError by mutableStateOf<String?>(null)
+    var rewardCoinsError by mutableStateOf<String?>(null)
+
     private val _suggestions = MutableStateFlow<List<Todo>>(emptyList())
     val suggestions: StateFlow<List<Todo>> = _suggestions
 
@@ -32,6 +35,11 @@ class AddTodoViewModel(application: Application) : AndroidViewModel(application)
 
     fun onTitleChanged(newTitle: String) {
         title = newTitle
+        if (newTitle.length > 50) {
+            titleError = "Title cannot be longer than 50 characters"
+        } else {
+            titleError = null
+        }
         searchJob?.cancel()
         if (newTitle.isNotBlank()) {
             searchJob = viewModelScope.launch {
@@ -48,16 +56,40 @@ class AddTodoViewModel(application: Application) : AndroidViewModel(application)
         dueDate = suggestion.dueDate
         _suggestions.value = emptyList()
     }
+    
+    fun clearSuggestions() {
+        _suggestions.value = emptyList()
+    }
 
     fun onAddTodo(onSuccess: () -> Unit) {
-        viewModelScope.launch {
-            val coins = rewardCoins.toIntOrNull() ?: 0
-            if (title.isNotBlank() && coins > 0) {
+        if (validate()) {
+            viewModelScope.launch {
+                val coins = rewardCoins.toInt()
                 repository.addTodo(title, description, coins, dueDate)
                 broadcastUpdate()
                 onSuccess()
             }
         }
+    }
+
+    private fun validate(): Boolean {
+        var isValid = true
+        if (title.isBlank()) {
+            titleError = "Title is required"
+            isValid = false
+        } else {
+            titleError = null
+        }
+        if (rewardCoins.isBlank()) {
+            rewardCoinsError = "Reward is required"
+            isValid = false
+        } else if (rewardCoins.toIntOrNull() == null) {
+            rewardCoinsError = "Reward must be a number"
+            isValid = false
+        } else {
+            rewardCoinsError = null
+        }
+        return isValid
     }
 
     fun onDueDateChanged(date: Date) {

@@ -24,7 +24,7 @@ class TimeGoalsViewModel(application: Application) : AndroidViewModel(applicatio
 
     val activeTimeGoal: StateFlow<TimeGoal?> = TimeGoalManager.timerState.map {
         when (it) {
-            is TimeGoalManager.TimerState.Running -> timeGoals.value.find { goal -> goal.id == it.goalId }
+            is TimeGoalManager.TimerState.Running -> it.goal
             else -> null
         }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
@@ -36,17 +36,20 @@ class TimeGoalsViewModel(application: Application) : AndroidViewModel(applicatio
 
     var selectedTimeGoal by mutableStateOf<TimeGoal?>(null)
     var showDurationDialog by mutableStateOf(false)
+    var customDuration by mutableStateOf("")
 
     fun onStartGoalClicked(timeGoal: TimeGoal) {
         selectedTimeGoal = timeGoal
+        customDuration = timeGoal.remainingTimeMinutes.toString()
         showDurationDialog = true
     }
 
-    fun onStartTimer(context: Context, duration: Long) {
+    fun onStartTimer(context: Context, durationMinutes: Long) {
         selectedTimeGoal?.let { goal ->
             val intent = Intent(context, TimeGoalService::class.java).apply {
                 action = TimeGoalService.ACTION_START
                 putExtra(TimeGoalService.EXTRA_TIME_GOAL_ID, goal.id)
+                putExtra(TimeGoalService.EXTRA_DURATION_MINUTES, durationMinutes)
             }
             context.startService(intent)
             showDurationDialog = false

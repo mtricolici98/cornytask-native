@@ -7,6 +7,7 @@ import com.nobadhabbits.cornytask.features.history.HistoryRepository
 import com.nobadhabbits.cornytask.features.user.UserRepository
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.first
@@ -16,8 +17,8 @@ import java.util.concurrent.TimeUnit
 object TimeGoalManager {
     sealed class TimerState {
         object Idle : TimerState()
-        data class Running(val goalId: String, val remainingMillis: Long) : TimerState()
-        data class Finished(val goalId: String) : TimerState()
+        data class Running(val goal: TimeGoal, val remainingMillis: Long, val totalDurationMillis: Long) : TimerState()
+        data class Finished(val goal: TimeGoal, val totalDurationMillis: Long) : TimerState()
     }
 
     private val _timerState = MutableStateFlow<TimerState>(TimerState.Idle)
@@ -27,38 +28,43 @@ object TimeGoalManager {
     private val timeGoalRepository = TimeGoalRepository()
     private val historyRepository = HistoryRepository()
     private val userRepository = UserRepository()
-    private val managerScope = CoroutineScope(Dispatchers.IO)
+    private val ioScope = CoroutineScope(Dispatchers.IO)
+    private val mainScope = CoroutineScope(Dispatchers.Main + SupervisorJob())
     private var totalDurationMillisForCurrentTimer: Long = 0L
 
     fun startTimer(timeGoal: TimeGoal, durationMillis: Long) {
-        countDownTimer?.cancel()
-        totalDurationMillisForCurrentTimer = durationMillis
-        _timerState.value = TimerState.Running(timeGoal.id, durationMillis)
+        mainScope.launch {
+            countDownTimer?.cancel()
+            totalDurationMillisForCurrentTimer = durationMillis
+            _timerState.value = TimerState.Running(timeGoal, durationMillis, durationMillis)
 
-        countDownTimer = object : CountDownTimer(durationMillis, 1000) {
-            override fun onTick(millisUntilFinished: Long) {
-                _timerState.value = TimerState.Running(timeGoal.id, millisUntilFinished)
-            }
+            countDownTimer = object : CountDownTimer(durationMillis, 1000) {
+                override fun onTick(millisUntilFinished: Long) {
+                    _timerState.value = TimerState.Running(timeGoal, millisUntilFinished, durationMillis)
+                }
 
-            override fun onFinish() {
-                _timerState.value = TimerState.Finished(timeGoal.id)
-                handleFinish(timeGoal, totalDurationMillisForCurrentTimer)
-            }
-        }.start()
+                override fun onFinish() {
+                    _timerState.value = TimerState.Finished(timeGoal, totalDurationMillisForCurrentTimer)
+                    handleFinish(timeGoal, totalDurationMillisForCurrentTimer)
+                }
+            }.start()
+        }
     }
 
     fun stopTimer() {
-        val currentState = _timerState.value
-        if (currentState is TimerState.Running) {
-            countDownTimer?.cancel()
-            val elapsedMillis = totalDurationMillisForCurrentTimer - currentState.remainingMillis
-            handleStop(currentState.goalId, elapsedMillis)
-            _timerState.value = TimerState.Idle
+        mainScope.launch {
+            val currentState = _timerState.value
+            if (currentState is TimerState.Running) {
+                countDownTimer?.cancel()
+                val elapsedMillis = totalDurationMillisForCurrentTimer - currentState.remainingMillis
+                handleStop(currentState.goal.id, elapsedMillis)
+                _timerState.value = TimerState.Idle
+            }
         }
     }
 
     private fun handleStop(goalId: String, elapsedMillis: Long) {
-        managerScope.launch {
+        ioScope.launch {
             val timeGoal = timeGoalRepository.getTimeGoalsFlow().first().find { it.id == goalId } ?: return@launch
             val elapsedMinutes = TimeUnit.MILLISECONDS.toMinutes(elapsedMillis)
             if (elapsedMinutes > 0) {
@@ -79,7 +85,7 @@ object TimeGoalManager {
     }
 
     private fun handleFinish(timeGoal: TimeGoal, durationMillis: Long) {
-        managerScope.launch {
+        ioScope.launch {
             val durationMinutes = TimeUnit.MILLISECONDS.toMinutes(durationMillis)
             val newRemainingTime = timeGoal.remainingTimeMinutes - durationMinutes
             val updatedGoal = timeGoal.copy(remainingTimeMinutes = if (newRemainingTime > 0) newRemainingTime else 0)

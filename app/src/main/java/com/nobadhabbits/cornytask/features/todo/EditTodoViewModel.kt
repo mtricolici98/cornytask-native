@@ -20,6 +20,11 @@ class EditTodoViewModel(application: Application) : AndroidViewModel(application
     var title by mutableStateOf("")
     var description by mutableStateOf("")
     var rewardCoins by mutableStateOf("")
+
+
+    var titleError by mutableStateOf<String?>(null)
+    var rewardCoinsError by mutableStateOf<String?>(null)
+
     var dueDate by mutableStateOf<Date?>(null)
 
     fun loadTodo(todoId: String) {
@@ -41,12 +46,17 @@ class EditTodoViewModel(application: Application) : AndroidViewModel(application
 
     fun onTitleChanged(newTitle: String) {
         title = newTitle
+        if (newTitle.length > 50) {
+            titleError = "Title cannot be longer than 50 characters"
+        } else {
+            titleError = null
+        }
     }
 
     fun onUpdateTodo(onSuccess: () -> Unit) {
-        viewModelScope.launch {
-            val coins = rewardCoins.toIntOrNull() ?: 0
-            if (title.isNotBlank() && coins > 0) {
+        if (validate()) {
+            viewModelScope.launch {
+                val coins = rewardCoins.toInt()
                 todoId?.let {
                     repository.updateTodo(it, title, description, coins, dueDate)
                     broadcastUpdate()
@@ -54,6 +64,26 @@ class EditTodoViewModel(application: Application) : AndroidViewModel(application
                 }
             }
         }
+    }
+
+    private fun validate(): Boolean {
+        var isValid = true
+        if (title.isBlank()) {
+            titleError = "Title is required"
+            isValid = false
+        } else {
+            titleError = null
+        }
+        if (rewardCoins.isBlank()) {
+            rewardCoinsError = "Reward is required"
+            isValid = false
+        } else if (rewardCoins.toIntOrNull() == null) {
+            rewardCoinsError = "Reward must be a number"
+            isValid = false
+        } else {
+            rewardCoinsError = null
+        }
+        return isValid
     }
 
     private fun broadcastUpdate() {

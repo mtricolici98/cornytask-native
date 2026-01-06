@@ -147,6 +147,11 @@ fun HistoryDetailView(historyItems: List<History>) {
                 ListItem(
                     headlineContent = { Text(item.title) },
                     leadingContent = { Checkbox(checked = true, onCheckedChange = null) },
+                    supportingContent = {
+                        if (item.durationMinutes !== null) {
+                            Text(text = "Duration: ${item.durationMinutes} minutes")
+                        }
+                    },
                     trailingContent = {
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Text(text = item.rewardCoins.toString())

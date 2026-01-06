@@ -3,6 +3,8 @@ package com.nobadhabbits.cornytask.features.todo
 import android.app.Application
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -33,6 +35,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.KeyboardType
@@ -64,7 +67,7 @@ fun AddTodoScreen(onNavigateUp: () -> Unit) {
         DatePickerDialog(
             onDismissRequest = { showDatePicker = false },
             confirmButton = {
-                TextButton(
+                Button(
                     onClick = {
                         datePickerState.selectedDateMillis?.let {
                             selectedDate = Date(it)
@@ -75,7 +78,7 @@ fun AddTodoScreen(onNavigateUp: () -> Unit) {
                 ) { Text("OK") }
             },
             dismissButton = {
-                TextButton(onClick = { showDatePicker = false }) { Text("Cancel") }
+                Button(onClick = { showDatePicker = false }) { Text("Cancel") }
             }
         ) {
             DatePicker(state = datePickerState)
@@ -87,7 +90,7 @@ fun AddTodoScreen(onNavigateUp: () -> Unit) {
         DatePickerDialog(
             onDismissRequest = { showTimePicker = false },
             confirmButton = {
-                TextButton(
+                Button(
                     onClick = {
                         val cal = Calendar.getInstance()
                         selectedDate?.let { cal.time = it }
@@ -99,10 +102,12 @@ fun AddTodoScreen(onNavigateUp: () -> Unit) {
                 ) { Text("OK") }
             },
             dismissButton = {
-                TextButton(onClick = { showTimePicker = false }) { Text("Cancel") }
+                Button(onClick = { showTimePicker = false }) { Text("Cancel") }
             }
         ) {
-            TimePicker(state = timePickerState)
+            Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+                TimePicker(state = timePickerState, modifier = Modifier.fillMaxWidth().padding(12.dp))
+            }
         }
     }
 
@@ -110,23 +115,26 @@ fun AddTodoScreen(onNavigateUp: () -> Unit) {
         topBar = { TopAppBar(title = { Text("Add To-do") }) }
     ) {
         Column(modifier = Modifier.padding(it).padding(16.dp)) {
-            TextField(
-                value = viewModel.title,
-                onValueChange = { viewModel.onTitleChanged(it) },
-                label = { Text("Title") },
-                modifier = Modifier.fillMaxWidth()
-            )
-            if (suggestions.isNotEmpty()) {
-                LazyColumn(modifier = Modifier.height(100.dp)) {
-                    items(suggestions) { suggestion ->
-                        ListItem(
-                            headlineContent = { Text(suggestion.title) },
-                            modifier = Modifier
-                                .fillMaxWidth().clickable(
-                                    interactionSource = remember { MutableInteractionSource() },
-                                    indication = null,
-                                    onClick = { viewModel.onSuggestionTapped(suggestion) }
-                                )
+            ExposedDropdownMenuBox(expanded = suggestions.isNotEmpty(), onExpandedChange = {}) {
+                TextField(
+                    value = viewModel.title,
+                    onValueChange = { viewModel.onTitleChanged(it) },
+                    label = { Text("Title") },
+                    modifier = Modifier.fillMaxWidth().menuAnchor(),
+                    isError = viewModel.titleError != null,
+                    supportingText = { viewModel.titleError?.let { Text(it) } }
+                )
+
+                ExposedDropdownMenu(
+                    expanded = suggestions.isNotEmpty(),
+                    onDismissRequest = { viewModel.clearSuggestions() },
+                ) {
+                    suggestions.forEach { suggestion ->
+                        DropdownMenuItem(
+                            text = { Text("%s %d".format(suggestion.title, suggestion.rewardCoins)) },
+                            onClick = {
+                                viewModel.onSuggestionTapped(suggestion)
+                            }
                         )
                     }
                 }
@@ -149,7 +157,9 @@ fun AddTodoScreen(onNavigateUp: () -> Unit) {
                 onValueChange = { viewModel.rewardCoins = it },
                 label = { Text("Reward in Unicorns") },
                 modifier = Modifier.fillMaxWidth(),
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                isError = viewModel.rewardCoinsError != null,
+                supportingText = { viewModel.rewardCoinsError?.let { Text(it) } }
             )
 
             Spacer(modifier = Modifier.height(16.dp))

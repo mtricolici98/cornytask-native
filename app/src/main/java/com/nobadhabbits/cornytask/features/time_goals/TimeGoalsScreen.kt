@@ -1,15 +1,11 @@
 package com.nobadhabbits.cornytask.features.time_goals
 
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectTapGestures
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.text.KeyboardOptions
@@ -34,8 +30,10 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -65,9 +63,12 @@ fun TimeGoalsScreen(viewModel: TimeGoalsViewModel = viewModel(), navController: 
         LazyColumn(modifier = Modifier.padding(it)) {
             items(timeGoals) { timeGoal ->
                 key(timeGoal.id) {
+                    val isActive = activeTimeGoal?.id == timeGoal.id
                     TimeGoalItem(
                         timeGoal = timeGoal,
+                        isActive = isActive,
                         onStartGoal = { viewModel.onStartGoalClicked(timeGoal) },
+                        onActiveClick = { navController.navigate("timer_screen")},
                         onLongPress = { showDeleteDialog = timeGoal }
                     )
                 }
@@ -93,7 +94,7 @@ fun TimeGoalsScreen(viewModel: TimeGoalsViewModel = viewModel(), navController: 
             DurationSelectionDialog(
                 timeGoal = goal,
                 onDismiss = { viewModel.showDurationDialog = false },
-                onStart = { viewModel.onStartTimer(context, 0L) }
+                onStart = { duration -> viewModel.onStartTimer(context, duration) }
             )
         }
     }
@@ -116,7 +117,9 @@ fun TimeGoalsScreen(viewModel: TimeGoalsViewModel = viewModel(), navController: 
 @Composable
 private fun TimeGoalItem(
     timeGoal: TimeGoal,
+    isActive: Boolean,
     onStartGoal: () -> Unit,
+    onActiveClick: () -> Unit,
     onLongPress: () -> Unit
 ) {
     val progress = if (timeGoal.totalTimeMinutes > 0) {
@@ -126,7 +129,12 @@ private fun TimeGoalItem(
     }
 
     ListItem(
-        headlineContent = { Text(timeGoal.title) },
+        headlineContent = {
+            Text(
+                text = timeGoal.title,
+                fontWeight = if (isActive) FontWeight.Bold else FontWeight.Normal
+            )
+        },
         supportingContent = {
             Column {
                 Text("Remaining: ${timeGoal.remainingTimeMinutes} of ${timeGoal.totalTimeMinutes} minutes")
@@ -138,8 +146,14 @@ private fun TimeGoalItem(
             }
         },
         trailingContent = {
-            Button(onClick = onStartGoal, enabled = timeGoal.remainingTimeMinutes > 0) {
-                Text(if (timeGoal.remainingTimeMinutes > 0) "Start Goal" else "Completed")
+            if (isActive) {
+                Button(onClick = onActiveClick) {
+                    Text("Active", color = Color.Green, fontWeight = FontWeight.Bold)
+                }
+            } else {
+                Button(onClick = onStartGoal, enabled = timeGoal.remainingTimeMinutes > 0) {
+                    Text(if (timeGoal.remainingTimeMinutes > 0) "Start Goal" else "Completed")
+                }
             }
         },
         modifier = Modifier.pointerInput(Unit) {
@@ -205,14 +219,33 @@ private fun AddGoalDialog(
 private fun DurationSelectionDialog(
     timeGoal: TimeGoal,
     onDismiss: () -> Unit,
-    onStart: () -> Unit
+    onStart: (Long) -> Unit
 ) {
+    var duration by remember { mutableStateOf(timeGoal.remainingTimeMinutes.toString()) }
+
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text("Start Timer") },
-        text = { Text("Do you want to start the timer for ${timeGoal.remainingTimeMinutes} minutes?") },
+        text = {
+            Column {
+                Text("Enter duration in minutes for ${timeGoal.title}.")
+                Spacer(Modifier.height(8.dp))
+                TextField(
+                    value = duration,
+                    onValueChange = { duration = it },
+                    label = { Text("Duration (minutes)") },
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
+        },
         confirmButton = {
-            Button(onClick = onStart) {
+            Button(onClick = {
+                val durationMinutes = duration.toLongOrNull()
+                if (durationMinutes != null && durationMinutes > 0) {
+                    onStart(durationMinutes)
+                }
+            }) {
                 Text("Start")
             }
         },

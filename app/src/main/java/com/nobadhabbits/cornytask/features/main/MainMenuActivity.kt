@@ -36,6 +36,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -121,6 +122,12 @@ class MainMenuActivity : FragmentActivity() {
         askNotificationPermission()
     }
 
+    override fun onNewIntent(intent: Intent?) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+    }
+
+
     private fun askNotificationPermission() {
         // This is only necessary for API level 33+
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
@@ -159,26 +166,30 @@ fun MainScreen(onSignOut: () -> Unit, userViewModel: UserViewModel = viewModel()
     val currentDestination = navBackStackEntry?.destination
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
-    val timeGoalSet = (context as MainMenuActivity).intent.getStringExtra("timeGoalId")
-    if (timeGoalSet != null && timeGoalSet != "") {
-        navController.navigate(Screen.TimeGoals.route) {
-            popUpTo(navController.graph.findStartDestination().id) {
-                saveState = true
+
+    (context as? MainMenuActivity)?.intent?.getStringExtra("timeGoalId")?.let {
+        LaunchedEffect(it) {
+            navController.navigate(Screen.TimeGoals.route) {
+                popUpTo(navController.graph.findStartDestination().id) {
+                    saveState = true
+                }
+                launchSingleTop = true
+                restoreState = true
             }
-            launchSingleTop = true
-            restoreState = true
         }
     }
+
+
     Scaffold(
         topBar = {
             TopAppBar(
                 title = { Text("CornyTask") },
                 navigationIcon = {
-                    if (currentDestination?.parent?.route == Screen.More.route && currentDestination.route != "more_menu") {
+//                    if (currentDestination?.parent?.route == Screen.More.route && currentDestination.route != "more_menu") {
                         IconButton(onClick = { navController.popBackStack() }) {
                             Icon(Icons.Default.ArrowBack, contentDescription = "Back")
                         }
-                    }
+//                    }
                 },
                 actions = {
                     user?.let { CoinPill(coins = it.coins, onClick = {navController.navigate(Screen.Rewards.route) {
@@ -229,7 +240,7 @@ fun MainScreen(onSignOut: () -> Unit, userViewModel: UserViewModel = viewModel()
                     Screen.Todo,
                     Screen.Rewards,
                     Screen.TimeGoals,
-                    Screen.More
+                    Screen.History
                 )
                 items.forEach { screen ->
                     NavigationBarItem(
@@ -264,13 +275,17 @@ fun MainScreen(onSignOut: () -> Unit, userViewModel: UserViewModel = viewModel()
         ) {
             composable(Screen.Todo.route) { TodoScreen( ) }
             composable(Screen.Rewards.route) { RewardsScreen() }
-            composable(Screen.TimeGoals.route) { TimeGoalsScreen(navController = navController) }
-            composable("timer_screen") { TimerScreen(navController = navController) }
-            navigation(startDestination = "more_menu", route = Screen.More.route) {
-                composable("more_menu") { MoreScreen(navController = navController) }
-                composable(MoreScreenItems.History.route) { HistoryScreen() }
-                composable(MoreScreenItems.Notes.route) { NotesScreen() }
+            navigation(startDestination = "TimeGoalsMain", route = Screen.TimeGoals.route) {
+                composable("TimeGoalsMain") { TimeGoalsScreen(navController = navController) }
+                composable("timer_screen") { TimerScreen(navController = navController) }
             }
+            composable(Screen.History.route) { HistoryScreen() }
+//
+//            navigation(startDestination = "more_menu", route = Screen.More.route) {
+//                composable("more_menu") { MoreScreen(navController = navController) }
+//                composable(MoreScreenItems.History.route) { HistoryScreen() }
+//                composable(MoreScreenItems.Notes.route) { NotesScreen() }
+//            }
         }
     }
 }
