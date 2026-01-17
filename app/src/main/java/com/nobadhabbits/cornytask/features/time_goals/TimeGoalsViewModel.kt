@@ -31,7 +31,8 @@ class TimeGoalsViewModel(application: Application) : AndroidViewModel(applicatio
 
     var isAddingTimeGoal by mutableStateOf(false)
     var newTimeGoalTitle by mutableStateOf("")
-    var newTimeGoalTotalTime by mutableStateOf("")
+    var newTimeGoalHours by mutableStateOf("")
+    var newTimeGoalMinutes by mutableStateOf("")
     var newTimeGoalRewardCoins by mutableStateOf("")
 
     var selectedTimeGoal by mutableStateOf<TimeGoal?>(null)
@@ -62,12 +63,15 @@ class TimeGoalsViewModel(application: Application) : AndroidViewModel(applicatio
 
     fun onAddTimeGoal() {
         viewModelScope.launch {
-            val totalTime = newTimeGoalTotalTime.toLongOrNull()
+            val hours = newTimeGoalHours.toLongOrNull() ?: 0L
+            val minutes = newTimeGoalMinutes.toLongOrNull() ?: 0L
+            val totalTime = (hours * 60) + minutes
             val rewardCoins = newTimeGoalRewardCoins.toIntOrNull()
-            if (newTimeGoalTitle.isNotBlank() && totalTime != null && totalTime > 0 && rewardCoins != null && rewardCoins > 0) {
+            if (newTimeGoalTitle.isNotBlank() && totalTime > 0 && rewardCoins != null && rewardCoins > 0) {
                 timeGoalRepository.addTimeGoal(newTimeGoalTitle, totalTime, rewardCoins)
                 newTimeGoalTitle = ""
-                newTimeGoalTotalTime = ""
+                newTimeGoalHours = ""
+                newTimeGoalMinutes = ""
                 newTimeGoalRewardCoins = ""
                 isAddingTimeGoal = false
             }

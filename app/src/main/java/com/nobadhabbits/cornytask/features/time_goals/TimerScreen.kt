@@ -17,9 +17,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
@@ -31,7 +29,7 @@ fun TimerScreen(viewModel: TimeGoalsViewModel = viewModel(), navController: NavC
     val activeTimeGoal by viewModel.activeTimeGoal.collectAsState()
     val context = LocalContext.current
 
-    var previouslyActiveGoal = remember { activeTimeGoal };
+    var previouslyActiveGoal = remember { activeTimeGoal }
 
     LaunchedEffect(activeTimeGoal) {
         if (activeTimeGoal == null) {
@@ -50,9 +48,17 @@ fun TimerScreen(viewModel: TimeGoalsViewModel = viewModel(), navController: NavC
             if (timerState is TimeGoalManager.TimerState.Running) {
                 val runningState = timerState as TimeGoalManager.TimerState.Running
                 val remainingMillis = runningState.remainingMillis
-                val minutes = TimeUnit.MILLISECONDS.toMinutes(remainingMillis)
-                val seconds = TimeUnit.MILLISECONDS.toSeconds(remainingMillis) % 60
-                val timeString = "%02dm:%02ds left...".format(minutes, seconds)
+
+                val timeString = if (remainingMillis >= TimeUnit.HOURS.toMillis(1)) {
+                    val hours = TimeUnit.MILLISECONDS.toHours(remainingMillis)
+                    val minutes = TimeUnit.MILLISECONDS.toMinutes(remainingMillis) % 60
+                    "%02dh:%02dm left...".format(hours, minutes)
+                } else {
+                    val minutes = TimeUnit.MILLISECONDS.toMinutes(remainingMillis)
+                    val seconds = TimeUnit.MILLISECONDS.toSeconds(remainingMillis) % 60
+                    "%02dm:%02ds left...".format(minutes, seconds)
+                }
+
                 val goal = runningState.goal
                 previouslyActiveGoal = goal
                 Text(text = goal.title, modifier = Modifier.padding(bottom = 16.dp), fontWeight = FontWeight.Bold)
@@ -62,8 +68,8 @@ fun TimerScreen(viewModel: TimeGoalsViewModel = viewModel(), navController: NavC
                     Text("Stop Timer")
                 }
             } else {
-                if(previouslyActiveGoal != null) {
-                    Text(text = previouslyActiveGoal.title, modifier = Modifier.padding(bottom = 16.dp), fontWeight = FontWeight.Bold)
+                if (previouslyActiveGoal != null) {
+                    Text(text = previouslyActiveGoal!!.title, modifier = Modifier.padding(bottom = 16.dp), fontWeight = FontWeight.Bold)
                     Spacer(modifier = Modifier.size(16.dp))
                     Text(text = "Time goal complete", modifier = Modifier.padding(bottom = 8.dp))
                 }

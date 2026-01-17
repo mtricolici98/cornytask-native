@@ -2,10 +2,12 @@ package com.nobadhabbits.cornytask.features.time_goals
 
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.text.KeyboardOptions
@@ -68,7 +70,7 @@ fun TimeGoalsScreen(viewModel: TimeGoalsViewModel = viewModel(), navController: 
                         timeGoal = timeGoal,
                         isActive = isActive,
                         onStartGoal = { viewModel.onStartGoalClicked(timeGoal) },
-                        onActiveClick = { navController.navigate("timer_screen")},
+                        onActiveClick = { navController.navigate("timer_screen") },
                         onLongPress = { showDeleteDialog = timeGoal }
                     )
                 }
@@ -80,8 +82,10 @@ fun TimeGoalsScreen(viewModel: TimeGoalsViewModel = viewModel(), navController: 
         AddGoalDialog(
             title = viewModel.newTimeGoalTitle,
             onTitleChange = { viewModel.newTimeGoalTitle = it },
-            totalTime = viewModel.newTimeGoalTotalTime,
-            onTotalTimeChange = { viewModel.newTimeGoalTotalTime = it },
+            hours = viewModel.newTimeGoalHours,
+            onHoursChange = { viewModel.newTimeGoalHours = it },
+            minutes = viewModel.newTimeGoalMinutes,
+            onMinutesChange = { viewModel.newTimeGoalMinutes = it },
             rewardCoins = viewModel.newTimeGoalRewardCoins,
             onRewardCoinsChange = { viewModel.newTimeGoalRewardCoins = it },
             onAdd = { viewModel.onAddTimeGoal() },
@@ -137,7 +141,7 @@ private fun TimeGoalItem(
         },
         supportingContent = {
             Column {
-                Text("Remaining: ${timeGoal.remainingTimeMinutes} of ${timeGoal.totalTimeMinutes} minutes")
+                Text("Remaining: ${formatTime(timeGoal.remainingTimeMinutes)} of ${formatTime(timeGoal.totalTimeMinutes)}")
                 Spacer(Modifier.height(4.dp))
                 LinearProgressIndicator(
                     progress = progress,
@@ -166,8 +170,10 @@ private fun TimeGoalItem(
 private fun AddGoalDialog(
     title: String,
     onTitleChange: (String) -> Unit,
-    totalTime: String,
-    onTotalTimeChange: (String) -> Unit,
+    hours: String,
+    onHoursChange: (String) -> Unit,
+    minutes: String,
+    onMinutesChange: (String) -> Unit,
     rewardCoins: String,
     onRewardCoinsChange: (String) -> Unit,
     onAdd: () -> Unit,
@@ -185,13 +191,23 @@ private fun AddGoalDialog(
                     modifier = Modifier.fillMaxWidth()
                 )
                 Spacer(Modifier.height(8.dp))
-                TextField(
-                    value = totalTime,
-                    onValueChange = onTotalTimeChange,
-                    label = { Text("Total Time (in minutes)") },
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                    modifier = Modifier.fillMaxWidth()
-                )
+                Row(modifier = Modifier.fillMaxWidth()) {
+                    TextField(
+                        value = hours,
+                        onValueChange = onHoursChange,
+                        label = { Text("Hours") },
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                        modifier = Modifier.weight(1f)
+                    )
+                    Spacer(Modifier.width(8.dp))
+                    TextField(
+                        value = minutes,
+                        onValueChange = onMinutesChange,
+                        label = { Text("Minutes") },
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                        modifier = Modifier.weight(1f)
+                    )
+                }
                 Spacer(Modifier.height(8.dp))
                 TextField(
                     value = rewardCoins,
@@ -221,28 +237,43 @@ private fun DurationSelectionDialog(
     onDismiss: () -> Unit,
     onStart: (Long) -> Unit
 ) {
-    var duration by remember { mutableStateOf(timeGoal.remainingTimeMinutes.toString()) }
+    val remainingHours = (timeGoal.remainingTimeMinutes / 60).toString()
+    val remainingMinutes = (timeGoal.remainingTimeMinutes % 60).toString()
+    var hours by remember { mutableStateOf(remainingHours) }
+    var minutes by remember { mutableStateOf(remainingMinutes) }
 
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text("Start Timer") },
         text = {
             Column {
-                Text("Enter duration in minutes for ${timeGoal.title}.")
+                Text("Enter duration for ${timeGoal.title}.")
                 Spacer(Modifier.height(8.dp))
-                TextField(
-                    value = duration,
-                    onValueChange = { duration = it },
-                    label = { Text("Duration (minutes)") },
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                    modifier = Modifier.fillMaxWidth()
-                )
+                Row(modifier = Modifier.fillMaxWidth()) {
+                    TextField(
+                        value = hours,
+                        onValueChange = { hours = it },
+                        label = { Text("Hours") },
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                        modifier = Modifier.weight(1f)
+                    )
+                    Spacer(Modifier.width(8.dp))
+                    TextField(
+                        value = minutes,
+                        onValueChange = { minutes = it },
+                        label = { Text("Minutes") },
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                        modifier = Modifier.weight(1f)
+                    )
+                }
             }
         },
         confirmButton = {
             Button(onClick = {
-                val durationMinutes = duration.toLongOrNull()
-                if (durationMinutes != null && durationMinutes > 0) {
+                val h = hours.toLongOrNull() ?: 0L
+                val m = minutes.toLongOrNull() ?: 0L
+                val durationMinutes = (h * 60) + m
+                if (durationMinutes > 0) {
                     onStart(durationMinutes)
                 }
             }) {
@@ -255,4 +286,14 @@ private fun DurationSelectionDialog(
             }
         }
     )
+}
+
+private fun formatTime(totalMinutes: Long): String {
+    val hours = totalMinutes / 60
+    val minutes = totalMinutes % 60
+    return when {
+        hours > 0 && minutes > 0 -> "${hours}h ${minutes}m"
+        hours > 0 -> "${hours}h"
+        else -> "${minutes}m"
+    }
 }

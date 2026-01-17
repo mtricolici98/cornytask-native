@@ -10,7 +10,6 @@ import android.content.pm.ServiceInfo
 import android.os.Build
 import android.os.IBinder
 import androidx.core.app.NotificationCompat
-import com.nobadhabbits.cornytask.MainActivity
 import com.nobadhabbits.cornytask.R
 import com.nobadhabbits.cornytask.data.TimeGoal
 import com.nobadhabbits.cornytask.features.main.MainMenuActivity
@@ -54,7 +53,8 @@ class TimeGoalService : Service() {
                     is TimeGoalManager.TimerState.Idle -> {
                         if (isForeground) {
                             stopService()
-                        }}
+                        }
+                    }
                     is TimeGoalManager.TimerState.Finished -> {
                         showCompletedNotification(state.goal, state.totalDurationMillis)
                         if (isForeground) {
@@ -129,9 +129,15 @@ class TimeGoalService : Service() {
     }
 
     private fun createNotification(timeGoal: TimeGoal, remainingMillis: Long, totalDurationMillis: Long): android.app.Notification {
-        val minutes = TimeUnit.MILLISECONDS.toMinutes(remainingMillis)
-        val seconds = TimeUnit.MILLISECONDS.toSeconds(remainingMillis) % 60
-        val timeString = String.format("%02d:%02d", minutes, seconds)
+        val timeString = if (remainingMillis >= TimeUnit.HOURS.toMillis(1)) {
+            val hours = TimeUnit.MILLISECONDS.toHours(remainingMillis)
+            val minutes = TimeUnit.MILLISECONDS.toMinutes(remainingMillis) % 60
+            String.format("%02d:%02d", hours, minutes)
+        } else {
+            val minutes = TimeUnit.MILLISECONDS.toMinutes(remainingMillis)
+            val seconds = TimeUnit.MILLISECONDS.toSeconds(remainingMillis) % 60
+            String.format("%02d:%02d", minutes, seconds)
+        }
 
         val notificationIntent = Intent(this, MainMenuActivity::class.java).apply {
             flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
@@ -150,7 +156,15 @@ class TimeGoalService : Service() {
     }
 
     private fun createCompletedNotification(timeGoal: TimeGoal, totalDurationMillis: Long): android.app.Notification {
-        val minutes = TimeUnit.MILLISECONDS.toMinutes(totalDurationMillis)
+        val timeString = if (totalDurationMillis >= TimeUnit.HOURS.toMillis(1)) {
+            val hours = TimeUnit.MILLISECONDS.toHours(totalDurationMillis)
+            val minutes = TimeUnit.MILLISECONDS.toMinutes(totalDurationMillis) % 60
+            String.format("%d hours and %d minutes", hours, minutes)
+        } else {
+            val minutes = TimeUnit.MILLISECONDS.toMinutes(totalDurationMillis)
+            String.format("%d minutes", minutes)
+        }
+
 
         val notificationIntent = Intent(this, MainMenuActivity::class.java).apply {
             flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
@@ -159,7 +173,7 @@ class TimeGoalService : Service() {
         val pendingIntent = PendingIntent.getActivity(this, 0, notificationIntent, PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT)
 
         return NotificationCompat.Builder(this, NOTIFICATION_CHANNEL_ID)
-            .setContentTitle("${timeGoal.title}: $minutes minutes completed")
+            .setContentTitle("${timeGoal.title}: $timeString completed")
             .setContentText("Well done!")
             .setSmallIcon(R.drawable.unicorn_logo)
             .setContentIntent(pendingIntent)
