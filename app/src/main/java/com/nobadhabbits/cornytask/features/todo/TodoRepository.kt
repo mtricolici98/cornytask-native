@@ -68,11 +68,11 @@ class TodoRepository {
         }
     }
 
-    suspend fun addTodo(title: String, description: String, rewardCoins: Int, dueDate: Date?) {
+    fun addTodo(title: String, description: String, rewardCoins: Int, dueDate: Date?) {
         val uid = auth.currentUser?.uid ?: return
         val keywords = title.lowercase().split(" ").filter { it.isNotBlank() }
         val todo = Todo(title = title, description = description, rewardCoins = rewardCoins, keywords = keywords, dueDate = dueDate)
-        firestore.collection("users").document(uid).collection("todos").add(todo).await()
+        firestore.collection("users").document(uid).collection("todos").add(todo)
     }
 
     suspend fun getSuggestions(query: String): List<Todo> {
@@ -85,24 +85,33 @@ class TodoRepository {
             .toObjects(Todo::class.java)
     }
 
-    suspend fun updateTodoStatus(todo: Todo, isCompleted: Boolean) {
+    fun updateTodoStatus(todo: Todo, isCompleted: Boolean) {
         val uid = auth.currentUser?.uid ?: return
         val historyCollection = firestore.collection("users").document(uid).collection("history")
         val todoDoc = firestore.collection("users").document(uid).collection("todos").document(todo.id)
 
-        if (isCompleted) {
-            val history = History(title = todo.title, rewardCoins = todo.rewardCoins)
-            val historyRef = historyCollection.add(history).await()
-            todoDoc.update("isCompleted", true, "historyId", historyRef.id).await()
-        } else {
-            todo.historyId?.let { historyCollection.document(it).delete().await() }
-            todoDoc.update("isCompleted", false, "historyId", null).await()
+        firestore.runBatch { batch ->
+            if (isCompleted) {
+                val newHistoryRef = historyCollection.document()
+                val history = History(
+                    title = todo.title,
+                    rewardCoins = todo.rewardCoins
+                )
+                batch.set(newHistoryRef, history)
+                batch.update(todoDoc, "isCompleted", true, "historyId", newHistoryRef.id)
+            } else {
+                todo.historyId?.let {
+                    val historyDoc = historyCollection.document(it)
+                    batch.delete(historyDoc)
+                }
+                batch.update(todoDoc, "isCompleted", false, "historyId", null)
+            }
         }
     }
 
-    suspend fun deleteTodo(todo: Todo) {
+    fun deleteTodo(todo: Todo) {
         val uid = auth.currentUser?.uid ?: return
-        firestore.collection("users").document(uid).collection("todos").document(todo.id).delete().await()
+        firestore.collection("users").document(uid).collection("todos").document(todo.id).delete()
     }
 
     suspend fun getTodo(todoId: String): Todo? {
@@ -113,7 +122,7 @@ class TodoRepository {
             .toObject(Todo::class.java)?.copy(id = todoId)
     }
 
-    suspend fun updateTodo(todoId: String, title: String, description: String, rewardCoins: Int, dueDate: Date?) {
+    fun updateTodo(todoId: String, title: String, description: String, rewardCoins: Int, dueDate: Date?) {
         val uid = auth.currentUser?.uid ?: return
         val keywords = title.lowercase().split(" ").filter { it.isNotBlank() }
         val todoUpdate = mapOf(
@@ -123,6 +132,6 @@ class TodoRepository {
             "keywords" to keywords,
             "dueDate" to dueDate
         )
-        firestore.collection("users").document(uid).collection("todos").document(todoId).update(todoUpdate).await()
+        firestore.collection("users").document(uid).collection("todos").document(todoId).update(todoUpdate)
     }
 }

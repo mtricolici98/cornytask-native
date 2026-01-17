@@ -7,7 +7,6 @@ import com.google.firebase.firestore.Query
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
-import kotlinx.coroutines.tasks.await
 
 class TimeGoalRepository {
 
@@ -33,7 +32,7 @@ class TimeGoalRepository {
         awaitClose { subscription.remove() }
     }
 
-    suspend fun addTimeGoal(title: String, totalTimeMinutes: Long, rewardCoins: Int) {
+    fun addTimeGoal(title: String, totalTimeMinutes: Long, rewardCoins: Int) {
         val newTimeGoal = TimeGoal(
             id = timeGoalsCollection.document().id,
             title = title,
@@ -41,14 +40,14 @@ class TimeGoalRepository {
             remainingTimeMinutes = totalTimeMinutes,
             rewardCoins = rewardCoins
         )
-        timeGoalsCollection.document(newTimeGoal.id).set(newTimeGoal).await()
+        timeGoalsCollection.document(newTimeGoal.id).set(newTimeGoal)
     }
 
-    suspend fun updateTimeGoal(timeGoal: TimeGoal) {
-        timeGoalsCollection.document(timeGoal.id).set(timeGoal).await()
+    fun updateTimeGoal(timeGoal: TimeGoal) {
+        timeGoalsCollection.document(timeGoal.id).set(timeGoal)
     }
 
-    suspend fun deleteTimeGoal(timeGoalId: String) {
-        timeGoalsCollection.document(timeGoalId).delete().await()
+    fun deleteTimeGoal(timeGoalId: String) {
+        timeGoalsCollection.document(timeGoalId).delete()
     }
 }

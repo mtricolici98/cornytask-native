@@ -5,9 +5,7 @@ import android.content.Context
 import android.content.Intent
 import androidx.glance.appwidget.GlanceAppWidget
 import androidx.glance.appwidget.GlanceAppWidgetReceiver
-import androidx.work.Constraints
 import androidx.work.ExistingPeriodicWorkPolicy
-import androidx.work.NetworkType
 import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
@@ -32,7 +30,7 @@ class TodoWidgetReceiver : GlanceAppWidgetReceiver() {
         super.onEnabled(context)
         val workRequest = PeriodicWorkRequestBuilder<TodoWidgetWorker>(
             15, TimeUnit.MINUTES
-        ).setConstraints(Constraints.Builder().setRequiredNetworkType(NetworkType.CONNECTED).build()).build()
+        ).build()
 
         WorkManager.getInstance(context).enqueueUniquePeriodicWork(
             "TodoWidgetWorker",
@@ -53,7 +51,6 @@ class TodoWidgetReceiver : GlanceAppWidgetReceiver() {
 
 fun enqueueDataUpdateWorker(context: Context) {
     val workRequest = OneTimeWorkRequestBuilder<TodoWidgetWorker>()
-        .setConstraints(Constraints.Builder().setRequiredNetworkType(NetworkType.CONNECTED).build())
         .build()
     WorkManager.getInstance(context).enqueue(workRequest)
 }

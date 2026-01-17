@@ -8,7 +8,6 @@ import com.google.firebase.firestore.Query
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
-import kotlinx.coroutines.tasks.await
 
 class RewardRepository {
 
@@ -50,19 +49,19 @@ class RewardRepository {
         }
     }
 
-    suspend fun addReward(title: String, cost: Int) {
+    fun addReward(title: String, cost: Int) {
         val uid = auth.currentUser?.uid ?: return
         val reward = Reward(title = title, cost = cost)
-        firestore.collection("users").document(uid).collection("rewards").add(reward).await()
+        firestore.collection("users").document(uid).collection("rewards").add(reward)
     }
 
-    suspend fun deleteReward(rewardId: String) {
+    fun deleteReward(rewardId: String) {
         val uid = auth.currentUser?.uid ?: return
-        firestore.collection("users").document(uid).collection("rewards").document(rewardId).delete().await()
+        firestore.collection("users").document(uid).collection("rewards").document(rewardId).delete()
     }
 
-    suspend fun updateReward(reward: Reward) {
+    fun updateReward(reward: Reward) {
         val uid = auth.currentUser?.uid ?: return
-        firestore.collection("users").document(uid).collection("rewards").document(reward.id).set(reward).await()
+        firestore.collection("users").document(uid).collection("rewards").document(reward.id).set(reward)
     }
 }

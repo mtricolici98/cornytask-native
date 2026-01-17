@@ -8,7 +8,6 @@ import com.google.firebase.firestore.Query
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
-import kotlinx.coroutines.tasks.await
 
 class HistoryRepository {
 
@@ -53,7 +52,7 @@ class HistoryRepository {
         }
     }
 
-    suspend fun addHistoryEntry(history: History) {
-        historyCollection?.add(history)?.await()
+    fun addHistoryEntry(history: History) {
+        historyCollection?.add(history)
     }
 }
