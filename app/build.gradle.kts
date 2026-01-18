@@ -40,6 +40,13 @@ android {
     buildFeatures {
         compose = true
     }
+    packagingOptions {
+        resources {
+            excludes += "/META-INF/{AL2.0,LGPL2.1}"
+            excludes += "META-INF/DEPENDENCIES"
+            excludes += "META-INF/google-api-client.properties"
+        }
+    }
 }
 
 dependencies {
@@ -58,6 +65,7 @@ dependencies {
     implementation(libs.androidx.lifecycle.viewmodel.compose)
     implementation("androidx.work:work-runtime-ktx:2.11.0")
     implementation("nl.dionsegijn:konfetti-compose:2.0.2")
+    implementation(libs.androidx.compose.runtime.livedata)
 
     debugImplementation("androidx.glance:glance-appwidget-preview:1.0.0")
 
@@ -70,6 +78,11 @@ dependencies {
     implementation("com.google.firebase:firebase-messaging")
     implementation(libs.firebase.auth)
     implementation(libs.firebase.firestore)
+
+    // Calendar
+    implementation("com.kizitonwose.calendar:compose:2.9.0")
+    implementation("org.jetbrains.kotlinx:kotlinx-datetime:0.6.0")
+
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)

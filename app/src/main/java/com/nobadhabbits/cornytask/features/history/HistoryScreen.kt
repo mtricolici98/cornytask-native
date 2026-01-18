@@ -143,7 +143,11 @@ fun HistoryDetailView(historyItems: List<History>) {
         }
     } else {
         LazyColumn(modifier = Modifier.fillMaxSize()) {
-            items(historyItems) { item ->
+            items(
+                items = historyItems,
+                key = { item -> item.id },
+                contentType = { "history" }
+            ) { item ->
                 ListItem(
                     headlineContent = { Text(item.title) },
                     leadingContent = { Checkbox(checked = true, onCheckedChange = null) },

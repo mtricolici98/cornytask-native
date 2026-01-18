@@ -20,7 +20,7 @@ class EditTodoActivity : ComponentActivity() {
                             val screenHeight = displayMetrics.heightPixels
 
                             val width = (screenWidth * 0.4).toInt()  // 40% of screen width
-                            val height = (screenHeight * 0.5).toInt() // 50% of screen height
+                            val height = (screenHeight * 0.70).toInt() // 50% of screen height
 
                             window.setLayout(width, height)
                             window.setGravity(Gravity.TOP or Gravity.END) // aligns to top-right

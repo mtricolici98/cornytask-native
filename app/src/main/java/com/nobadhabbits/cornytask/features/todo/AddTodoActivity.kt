@@ -10,9 +10,10 @@ class AddTodoActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         val isFromWidget = intent.getBooleanExtra("isFromWidget", false)
+        val selectedDate = intent.getStringExtra("selectedDate")
         setContent {
             Cornytaskv2Theme {
-                AddTodoScreen(onNavigateUp = {
+                AddTodoScreen(selectedDate = selectedDate, onNavigateUp = {
                     if (isFromWidget) {
                         if (resources.configuration.smallestScreenWidthDp >= 600) {
                             val displayMetrics = resources.displayMetrics
@@ -20,7 +21,7 @@ class AddTodoActivity : ComponentActivity() {
                             val screenHeight = displayMetrics.heightPixels
 
                             val width = (screenWidth * 0.4).toInt()  // 40% of screen width
-                            val height = (screenHeight * 0.5).toInt() // 50% of screen height
+                            val height = (screenHeight * 0.70).toInt() // 50% of screen height
 
                             window.setLayout(width, height)
                             window.setGravity(Gravity.TOP or Gravity.END) // aligns to top-right

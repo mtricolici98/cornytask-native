@@ -1,18 +1,15 @@
 package com.nobadhabbits.cornytask.features.todo
 
 import android.app.Application
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.interaction.MutableInteractionSource
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDialog
@@ -20,16 +17,15 @@ import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.ExposedDropdownMenuDefaults
-import androidx.compose.material3.ListItem
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TimePicker
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.material3.rememberTimePickerState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -42,13 +38,14 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import java.text.SimpleDateFormat
+import java.time.LocalDate
 import java.util.Calendar
 import java.util.Date
 import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun AddTodoScreen(onNavigateUp: () -> Unit) {
+fun AddTodoScreen(onNavigateUp: () -> Unit, selectedDate: String?) {
     val context = LocalContext.current
     val viewModel: AddTodoViewModel = viewModel(
         factory = AddTodoViewModelFactory(context.applicationContext as Application)
@@ -57,20 +54,31 @@ fun AddTodoScreen(onNavigateUp: () -> Unit) {
     var showDatePicker by remember { mutableStateOf(false) }
     var showTimePicker by remember { mutableStateOf(false) }
     val dateFormatter = remember { SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault()) }
-    var selectedDate by remember { mutableStateOf<Date?>(null) }
+    var date by remember { mutableStateOf<Date?>(null) }
     var showDueDateOptions by remember { mutableStateOf(false) }
     val dueDateOptions = listOf("In 1 hour", "In 4 hours", "Tomorrow", "In 2 days", "Custom")
 
+    LaunchedEffect(selectedDate) {
+        if (selectedDate != null) {
+            val localDate = LocalDate.parse(selectedDate)
+            val cal = Calendar.getInstance()
+            cal.set(localDate.year, localDate.monthValue - 1, localDate.dayOfMonth)
+            viewModel.onDueDateChanged(cal.time)
+        }
+    }
+
 
     if (showDatePicker) {
-        val datePickerState = rememberDatePickerState()
+        val cal = Calendar.getInstance()
+        viewModel.dueDate?.let { cal.time = it }
+        val datePickerState = rememberDatePickerState(initialSelectedDateMillis = cal.timeInMillis)
         DatePickerDialog(
             onDismissRequest = { showDatePicker = false },
             confirmButton = {
                 Button(
                     onClick = {
                         datePickerState.selectedDateMillis?.let {
-                            selectedDate = Date(it)
+                            date = Date(it)
                         }
                         showDatePicker = false
                         showTimePicker = true
@@ -86,17 +94,22 @@ fun AddTodoScreen(onNavigateUp: () -> Unit) {
     }
 
     if (showTimePicker) {
-        val timePickerState = rememberTimePickerState()
+        val cal = Calendar.getInstance()
+        viewModel.dueDate?.let { cal.time = it }
+        val timePickerState = rememberTimePickerState(
+            initialHour = cal.get(Calendar.HOUR_OF_DAY),
+            initialMinute = cal.get(Calendar.MINUTE)
+        )
         DatePickerDialog(
             onDismissRequest = { showTimePicker = false },
             confirmButton = {
                 Button(
                     onClick = {
-                        val cal = Calendar.getInstance()
-                        selectedDate?.let { cal.time = it }
-                        cal.set(Calendar.HOUR_OF_DAY, timePickerState.hour)
-                        cal.set(Calendar.MINUTE, timePickerState.minute)
-                        viewModel.onDueDateChanged(cal.time)
+                        val resultCal = Calendar.getInstance()
+                        date?.let { resultCal.time = it }
+                        resultCal.set(Calendar.HOUR_OF_DAY, timePickerState.hour)
+                        resultCal.set(Calendar.MINUTE, timePickerState.minute)
+                        viewModel.onDueDateChanged(resultCal.time)
                         showTimePicker = false
                     }
                 ) { Text("OK") }
@@ -114,13 +127,20 @@ fun AddTodoScreen(onNavigateUp: () -> Unit) {
     Scaffold(
         topBar = { TopAppBar(title = { Text("Add To-do") }) }
     ) {
-        Column(modifier = Modifier.padding(it).padding(16.dp)) {
+        Column(
+            modifier = Modifier
+                .padding(it)
+                .padding(16.dp)
+                .verticalScroll(rememberScrollState())
+        ) {
             ExposedDropdownMenuBox(expanded = suggestions.isNotEmpty(), onExpandedChange = {}) {
                 TextField(
                     value = viewModel.title,
                     onValueChange = { viewModel.onTitleChanged(it) },
                     label = { Text("Title") },
-                    modifier = Modifier.fillMaxWidth().menuAnchor(),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .menuAnchor(),
                     isError = viewModel.titleError != null,
                     supportingText = { viewModel.titleError?.let { Text(it) } }
                 )

@@ -1,11 +1,11 @@
 package com.nobadhabbits.cornytask.features.todo
 
-import com.nobadhabbits.cornytask.data.History
-import com.nobadhabbits.cornytask.data.Todo
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.ListenerRegistration
 import com.google.firebase.firestore.Query
+import com.nobadhabbits.cornytask.data.History
+import com.nobadhabbits.cornytask.data.Todo
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
@@ -51,7 +51,6 @@ class TodoRepository {
         }
     }
 
-    // One-shot fetch for widget
     suspend fun fetchAllTodos(): List<Todo> {
         val user = auth.currentUser ?: return emptyList()
         return try {
@@ -73,6 +72,17 @@ class TodoRepository {
         val keywords = title.lowercase().split(" ").filter { it.isNotBlank() }
         val todo = Todo(title = title, description = description, rewardCoins = rewardCoins, keywords = keywords, dueDate = dueDate)
         firestore.collection("users").document(uid).collection("todos").add(todo)
+    }
+
+    suspend fun upsertCalendarEvent(event: Todo) {
+        val uid = auth.currentUser?.uid ?: return
+        val collection = firestore.collection("users").document(uid).collection("todos")
+        val existing = collection.document(event.id).get().await()
+        if (existing.exists()) {
+            collection.document(event.id).set(event)
+        } else {
+            collection.document(event.id).set(event)
+        }
     }
 
     suspend fun getSuggestions(query: String): List<Todo> {

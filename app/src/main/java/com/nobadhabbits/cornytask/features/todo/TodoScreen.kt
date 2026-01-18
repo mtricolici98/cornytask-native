@@ -15,9 +15,15 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyItemScope
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.CalendarToday
+import androidx.compose.material.icons.filled.List
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Checkbox
+import androidx.compose.material3.Icon
 import androidx.compose.material3.ListItem
+import androidx.compose.material3.Tab
+import androidx.compose.material3.TabRow
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -36,6 +42,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.nobadhabbits.cornytask.R
 import com.nobadhabbits.cornytask.data.Reward
 import com.nobadhabbits.cornytask.data.Todo
+import com.nobadhabbits.cornytask.features.calendar.CalendarScreen
 import com.nobadhabbits.cornytask.features.rewards.RewardViewModel
 import com.nobadhabbits.cornytask.ui.theme.Purple40
 import java.text.SimpleDateFormat
@@ -58,28 +65,60 @@ private val negativeMessages = listOf(
 fun TodoScreen(
     todoViewModel: TodoViewModel = viewModel(factory = TodoViewModelFactory(LocalContext.current)),
     rewardViewModel: RewardViewModel = viewModel(),
+    onTabSelected: (Boolean) -> Unit
 ) {
     val todos by todoViewModel.todos.collectAsState()
     val user by todoViewModel.user.collectAsState()
     val rewards by rewardViewModel.rewards.collectAsState()
     var showDialog by remember { mutableStateOf<Todo?>(null) }
     val context = LocalContext.current
-
+    var showCalendar by remember { mutableStateOf(false) }
 
     val currentCoins = user?.coins ?: 0
 
     Column(modifier = Modifier.fillMaxSize()) {
-        if (todos.isEmpty()) {
-            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                Text("You have not created any TODOs yet.")
+        TabRow(selectedTabIndex = if (showCalendar) 1 else 0) {
+            Tab(
+                selected = !showCalendar,
+                onClick = { 
+                    showCalendar = false
+                    onTabSelected(true)
+                },
+                text = { Text("TODOs") },
+                icon = { Icon(Icons.Default.List, contentDescription = "TODOs") }
+            )
+            Tab(
+                selected = showCalendar,
+                onClick = { 
+                    showCalendar = true
+                    onTabSelected(false)
+                 },
+                text = { Text("Calendar") },
+                icon = { Icon(Icons.Default.CalendarToday, contentDescription = "Calendar") }
+            )
+        }
+
+        if (showCalendar) {
+            Box(modifier = Modifier.fillMaxSize()) {
+                CalendarScreen()
             }
         } else {
-            LazyColumn(modifier = Modifier.fillMaxSize()) {
-                items(todos, key = { todo -> todo.id }) { todo ->
-                    TodoItem(todo = todo, onLongPress = { showDialog = todo }) { isChecked ->
-                        todoViewModel.onTodoCompleted(todo, isChecked)
-                        makeToast(context, isChecked, todo, rewards, currentCoins)
+            if (todos.isEmpty()) {
+                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    Text("You have not created any TODOs yet.")
+                }
+            } else {
+                LazyColumn(modifier = Modifier.fillMaxSize()) {
+                    items(
+                        items = todos,
+                        key = { todo -> todo.id },
+                        contentType = { "todo" }
+                    ) { todo ->
+                        TodoItem(todo = todo, onLongPress = { showDialog = todo }) { isChecked ->
+                            todoViewModel.onTodoCompleted(todo, isChecked)
+                            makeToast(context, isChecked, todo, rewards, currentCoins)
 
+                        }
                     }
                 }
             }
