@@ -1,6 +1,7 @@
 package com.nobadhabbits.cornytask.features.calendar
 
 import android.content.Intent
+import android.content.res.Configuration
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -9,6 +10,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -37,6 +39,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -65,6 +68,7 @@ fun CalendarScreen(calendarViewModel: CalendarViewModel = viewModel()) {
     val todosByDate by calendarViewModel.todosByDate.collectAsState()
     val selectedDate by calendarViewModel.selectedDate.collectAsState()
     val context = LocalContext.current
+    val configuration = LocalConfiguration.current
 
     val currentMonth = YearMonth.now()
     val startMonth = currentMonth.minusMonths(100)
@@ -77,10 +81,7 @@ fun CalendarScreen(calendarViewModel: CalendarViewModel = viewModel()) {
         firstDayOfWeek = firstDayOfWeek
     )
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-    ) {
+    val calendar = @Composable {
         HorizontalCalendar(
             state = state,
             dayContent = { day ->
@@ -96,44 +97,65 @@ fun CalendarScreen(calendarViewModel: CalendarViewModel = viewModel()) {
                 MonthHeader(month = month, state = state)
             }
         )
+    }
 
+    val events = @Composable {
         val events = todosByDate[selectedDate] ?: emptyList()
         val dateFormatter = remember { DateTimeFormatter.ofLocalizedDate(FormatStyle.MEDIUM) }
-        Spacer(modifier = Modifier.height(16.dp))
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier.padding(horizontal = 16.dp)
-        ) {
-            Text(
-                text = "Events for ${selectedDate.format(dateFormatter)}",
-                style = MaterialTheme.typography.titleMedium,
-            )
-            Spacer(modifier = Modifier.weight(1f))
-            IconButton(onClick = { 
-                val intent = Intent(context, AddTodoActivity::class.java)
-                intent.putExtra("selectedDate", selectedDate.toString())
-                context.startActivity(intent)
-            }) {
-                Icon(Icons.Default.Add, contentDescription = "Add a new TODO")
-            }
-        }
 
-        Spacer(modifier = Modifier.height(8.dp))
-        if (events.isEmpty()) {
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(16.dp),
-                contentAlignment = Alignment.Center
+        Column {
+            Spacer(modifier = Modifier.height(16.dp))
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.padding(horizontal = 16.dp)
             ) {
-                Text("No events for this day.")
-            }
-        } else {
-            LazyColumn(modifier = Modifier.fillMaxSize()) {
-                items(events) { event ->
-                    EventCard(event)
+                Text(
+                    text = "Events for ${selectedDate.format(dateFormatter)}",
+                    style = MaterialTheme.typography.titleMedium,
+                )
+                Spacer(modifier = Modifier.weight(1f))
+                IconButton(onClick = {
+                    val intent = Intent(context, AddTodoActivity::class.java)
+                    intent.putExtra("selectedDate", selectedDate.toString())
+                    context.startActivity(intent)
+                }) {
+                    Icon(Icons.Default.Add, contentDescription = "Add a new TODO")
                 }
             }
+
+            Spacer(modifier = Modifier.height(8.dp))
+            if (events.isEmpty()) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(16.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text("No events for this day.")
+                }
+            } else {
+                LazyColumn(modifier = Modifier.fillMaxSize()) {
+                    items(events) { event ->
+                        EventCard(event)
+                    }
+                }
+            }
+        }
+    }
+
+    if (configuration.orientation == Configuration.ORIENTATION_LANDSCAPE) {
+        Row(modifier = Modifier.fillMaxSize()) {
+            Box(modifier = Modifier.fillMaxWidth(0.66f)) {
+                calendar()
+            }
+            Box(modifier = Modifier.fillMaxWidth()) {
+                events()
+            }
+        }
+    } else {
+        Column(modifier = Modifier.fillMaxSize()) {
+            calendar()
+            events()
         }
     }
 }
