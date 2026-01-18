@@ -93,4 +93,11 @@ class UserRepository {
         val uid = auth.currentUser?.uid ?: return
         firestore.collection("users").document(uid).update("fcmToken", token)
     }
+
+    suspend fun deleteUser() {
+        val user = auth.currentUser ?: return
+        firestore.collection("users").document(user.uid).delete().await()
+        user.delete().await()
+        auth.signOut()
+    }
 }

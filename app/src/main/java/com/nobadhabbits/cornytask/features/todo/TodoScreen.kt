@@ -84,7 +84,6 @@ fun TodoScreen(
                     showCalendar = false
                     onTabSelected(true)
                 },
-                text = { Text("TODOs") },
                 icon = { Icon(Icons.Default.List, contentDescription = "TODOs") }
             )
             Tab(
@@ -93,7 +92,6 @@ fun TodoScreen(
                     showCalendar = true
                     onTabSelected(false)
                  },
-                text = { Text("Calendar") },
                 icon = { Icon(Icons.Default.CalendarToday, contentDescription = "Calendar") }
             )
         }

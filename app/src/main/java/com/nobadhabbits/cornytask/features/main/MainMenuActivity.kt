@@ -66,6 +66,7 @@ import com.nobadhabbits.cornytask.R
 import com.nobadhabbits.cornytask.features.history.HistoryScreen
 import com.nobadhabbits.cornytask.features.login.LoginActivity
 import com.nobadhabbits.cornytask.features.rewards.RewardsScreen
+import com.nobadhabbits.cornytask.features.settings.SettingsScreen
 import com.nobadhabbits.cornytask.features.time_goals.TimeGoalsScreen
 import com.nobadhabbits.cornytask.features.time_goals.TimerScreen
 import com.nobadhabbits.cornytask.features.todo.AddTodoActivity
@@ -197,6 +198,19 @@ fun MainScreen(onSignOut: () -> Unit, userViewModel: UserViewModel = viewModel()
                             onDismissRequest = { showMenu = false }
                         ) {
                             DropdownMenuItem(
+                                text = { Text("Settings") },
+                                onClick = {
+                                    showMenu = false
+                                    navController.navigate(Screen.Settings.route) {
+                                        popUpTo(navController.graph.findStartDestination().id) {
+                                            saveState = true
+                                        }
+                                        launchSingleTop = true
+                                        restoreState = true
+                                    }
+                                }
+                            )
+                            DropdownMenuItem(
                                 text = { Text("Sign out") },
                                 onClick = {
                                     scope.launch {
@@ -269,6 +283,7 @@ fun MainScreen(onSignOut: () -> Unit, userViewModel: UserViewModel = viewModel()
                 composable("timer_screen") { TimerScreen(navController = navController) }
             }
             composable(Screen.History.route) { HistoryScreen() }
+            composable(Screen.Settings.route) { SettingsScreen(onSignOut) }
         }
     }
 }

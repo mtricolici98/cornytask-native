@@ -18,7 +18,9 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ChevronLeft
@@ -46,6 +48,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.kizitonwose.calendar.compose.CalendarState
+import com.kizitonwose.calendar.compose.ContentHeightMode
 import com.kizitonwose.calendar.compose.HorizontalCalendar
 import com.kizitonwose.calendar.compose.rememberCalendarState
 import com.kizitonwose.calendar.core.CalendarDay
@@ -95,7 +98,8 @@ fun CalendarScreen(calendarViewModel: CalendarViewModel = viewModel()) {
             },
             monthHeader = { month ->
                 MonthHeader(month = month, state = state)
-            }
+            },
+            modifier = Modifier.fillMaxWidth().verticalScroll(rememberScrollState())
         )
     }
 
@@ -145,7 +149,7 @@ fun CalendarScreen(calendarViewModel: CalendarViewModel = viewModel()) {
 
     if (configuration.orientation == Configuration.ORIENTATION_LANDSCAPE) {
         Row(modifier = Modifier.fillMaxSize()) {
-            Box(modifier = Modifier.fillMaxWidth(0.66f)) {
+            Box(modifier = Modifier.fillMaxWidth(0.5f)) {
                 calendar()
             }
             Box(modifier = Modifier.fillMaxWidth()) {

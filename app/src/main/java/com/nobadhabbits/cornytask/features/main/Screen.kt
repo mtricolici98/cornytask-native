@@ -8,6 +8,7 @@ import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.Note
 import androidx.compose.material.icons.filled.Timelapse
 import androidx.compose.material.icons.filled.DateRange
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.ui.graphics.vector.ImageVector
 
 sealed class Screen(val route: String, val icon: ImageVector) {
@@ -15,8 +16,8 @@ sealed class Screen(val route: String, val icon: ImageVector) {
     object Calendar : Screen("Calendar", Icons.Default.DateRange)
     object Rewards : Screen("Rewards", Icons.Default.Favorite)
     object TimeGoals : Screen("TimeGoals", Icons.Default.Timelapse)
-
     object History : Screen("History", Icons.Default.Check)
+    object Settings : Screen("Settings", Icons.Default.Settings)
 //    object More : Screen("More", Icons.Default.Menu)
 }
 
