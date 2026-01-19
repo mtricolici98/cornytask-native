@@ -31,6 +31,7 @@ object TimeGoalManager {
     private val ioScope = CoroutineScope(Dispatchers.IO)
     private val mainScope = CoroutineScope(Dispatchers.Main + SupervisorJob())
     private var totalDurationMillisForCurrentTimer: Long = 0L
+    private val timeTrackingRepository = TimeTrackingRepository()
 
     fun startTimer(timeGoal: TimeGoal, durationMillis: Long) {
         mainScope.launch {
@@ -68,39 +69,18 @@ object TimeGoalManager {
             val timeGoal = timeGoalRepository.getTimeGoalsFlow().first().find { it.id == goalId } ?: return@launch
             val elapsedMinutes = TimeUnit.MILLISECONDS.toMinutes(elapsedMillis)
             if (elapsedMinutes > 0) {
-                val newRemainingTime = timeGoal.remainingTimeMinutes - elapsedMinutes
-                val updatedGoal = timeGoal.copy(remainingTimeMinutes = if (newRemainingTime > 0) newRemainingTime else 0)
-                timeGoalRepository.updateTimeGoal(updatedGoal)
-
-                val historyEntry = History(
-                    title = timeGoal.title,
-                    rewardCoins = 0,
-                    type = "TIME_GOAL",
-                    durationMinutes = elapsedMinutes,
-                    timeGoalId = timeGoal.id
-                )
-                historyRepository.addHistoryEntry(historyEntry)
+                timeTrackingRepository.applyElapsedTime(timeGoal, elapsedMinutes)
             }
         }
     }
 
     private fun handleFinish(timeGoal: TimeGoal, durationMillis: Long) {
         ioScope.launch {
+
             val durationMinutes = TimeUnit.MILLISECONDS.toMinutes(durationMillis)
+            timeTrackingRepository.applyElapsedTime(timeGoal, durationMinutes);
             val newRemainingTime = timeGoal.remainingTimeMinutes - durationMinutes
-            val updatedGoal = timeGoal.copy(remainingTimeMinutes = if (newRemainingTime > 0) newRemainingTime else 0)
-            timeGoalRepository.updateTimeGoal(updatedGoal)
-
-            val historyEntry = History(
-                title = timeGoal.title,
-                rewardCoins = if (updatedGoal.remainingTimeMinutes <= 0) timeGoal.rewardCoins else 0,
-                type = "TIME_GOAL",
-                durationMinutes = durationMinutes,
-                timeGoalId = timeGoal.id
-            )
-            historyRepository.addHistoryEntry(historyEntry)
-
-            if (updatedGoal.remainingTimeMinutes <= 0) {
+            if (newRemainingTime <= 0) {
                 userRepository.addCoins(timeGoal.rewardCoins)
             }
         }

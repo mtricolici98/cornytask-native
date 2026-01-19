@@ -2,6 +2,7 @@ package com.nobadhabbits.cornytask.features.history
 
 import com.nobadhabbits.cornytask.data.History
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.DocumentReference
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.ListenerRegistration
 import com.google.firebase.firestore.Query
@@ -51,6 +52,9 @@ class HistoryRepository {
             auth.removeAuthStateListener(authListener)
         }
     }
+
+    fun newHistoryRef(): DocumentReference? =
+        historyCollection?.document() // creates ID locally (offline-safe)
 
     fun addHistoryEntry(history: History) {
         historyCollection?.add(history)

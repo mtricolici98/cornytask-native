@@ -39,18 +39,13 @@ class TimeGoalsViewModel(application: Application) : AndroidViewModel(applicatio
     var showDurationDialog by mutableStateOf(false)
     var customDuration by mutableStateOf("")
 
-    fun onStartGoalClicked(timeGoal: TimeGoal) {
-        selectedTimeGoal = timeGoal
-        customDuration = timeGoal.remainingTimeMinutes.toString()
-        showDurationDialog = true
-    }
 
-    fun onStartTimer(context: Context, durationMinutes: Long) {
+    fun onStartTimer(context: Context, selectedTimeGoal: TimeGoal) {
         selectedTimeGoal?.let { goal ->
             val intent = Intent(context, TimeGoalService::class.java).apply {
                 action = TimeGoalService.ACTION_START
                 putExtra(TimeGoalService.EXTRA_TIME_GOAL_ID, goal.id)
-                putExtra(TimeGoalService.EXTRA_DURATION_MINUTES, durationMinutes)
+                putExtra(TimeGoalService.EXTRA_DURATION_MINUTES, selectedTimeGoal.remainingTimeMinutes)
             }
             context.startService(intent)
             showDurationDialog = false

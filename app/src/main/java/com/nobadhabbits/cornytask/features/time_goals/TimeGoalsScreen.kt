@@ -69,7 +69,7 @@ fun TimeGoalsScreen(viewModel: TimeGoalsViewModel = viewModel(), navController: 
                     TimeGoalItem(
                         timeGoal = timeGoal,
                         isActive = isActive,
-                        onStartGoal = { viewModel.onStartGoalClicked(timeGoal) },
+                        onStartGoal = { viewModel.onStartTimer(context, timeGoal) },
                         onActiveClick = { navController.navigate("timer_screen") },
                         onLongPress = { showDeleteDialog = timeGoal }
                     )
@@ -91,16 +91,6 @@ fun TimeGoalsScreen(viewModel: TimeGoalsViewModel = viewModel(), navController: 
             onAdd = { viewModel.onAddTimeGoal() },
             onCancel = { viewModel.isAddingTimeGoal = false }
         )
-    }
-
-    if (viewModel.showDurationDialog) {
-        viewModel.selectedTimeGoal?.let { goal ->
-            DurationSelectionDialog(
-                timeGoal = goal,
-                onDismiss = { viewModel.showDurationDialog = false },
-                onStart = { duration -> viewModel.onStartTimer(context, duration) }
-            )
-        }
     }
 
     showDeleteDialog?.let { timeGoal ->
@@ -231,62 +221,6 @@ private fun AddGoalDialog(
     )
 }
 
-@Composable
-private fun DurationSelectionDialog(
-    timeGoal: TimeGoal,
-    onDismiss: () -> Unit,
-    onStart: (Long) -> Unit
-) {
-    val remainingHours = (timeGoal.remainingTimeMinutes / 60).toString()
-    val remainingMinutes = (timeGoal.remainingTimeMinutes % 60).toString()
-    var hours by remember { mutableStateOf(remainingHours) }
-    var minutes by remember { mutableStateOf(remainingMinutes) }
-
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text("Start Timer") },
-        text = {
-            Column {
-                Text("Enter duration for ${timeGoal.title}.")
-                Spacer(Modifier.height(8.dp))
-                Row(modifier = Modifier.fillMaxWidth()) {
-                    TextField(
-                        value = hours,
-                        onValueChange = { hours = it },
-                        label = { Text("Hours") },
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                        modifier = Modifier.weight(1f)
-                    )
-                    Spacer(Modifier.width(8.dp))
-                    TextField(
-                        value = minutes,
-                        onValueChange = { minutes = it },
-                        label = { Text("Minutes") },
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                        modifier = Modifier.weight(1f)
-                    )
-                }
-            }
-        },
-        confirmButton = {
-            Button(onClick = {
-                val h = hours.toLongOrNull() ?: 0L
-                val m = minutes.toLongOrNull() ?: 0L
-                val durationMinutes = (h * 60) + m
-                if (durationMinutes > 0) {
-                    onStart(durationMinutes)
-                }
-            }) {
-                Text("Start")
-            }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismiss) {
-                Text("Cancel")
-            }
-        }
-    )
-}
 
 private fun formatTime(totalMinutes: Long): String {
     val hours = totalMinutes / 60

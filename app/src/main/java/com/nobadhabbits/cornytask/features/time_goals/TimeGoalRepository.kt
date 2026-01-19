@@ -2,6 +2,7 @@ package com.nobadhabbits.cornytask.features.time_goals
 
 import com.nobadhabbits.cornytask.data.TimeGoal
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.DocumentReference
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.Query
 import kotlinx.coroutines.channels.awaitClose
@@ -46,6 +47,10 @@ class TimeGoalRepository {
     fun updateTimeGoal(timeGoal: TimeGoal) {
         timeGoalsCollection.document(timeGoal.id).set(timeGoal)
     }
+
+
+    fun goalRef(goalId: String): DocumentReference =
+        timeGoalsCollection.document(goalId)
 
     fun deleteTimeGoal(timeGoalId: String) {
         timeGoalsCollection.document(timeGoalId).delete()
