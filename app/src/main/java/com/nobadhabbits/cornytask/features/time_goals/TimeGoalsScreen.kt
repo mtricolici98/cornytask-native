@@ -47,6 +47,8 @@ fun TimeGoalsScreen(viewModel: TimeGoalsViewModel = viewModel(), navController: 
     val timeGoals by viewModel.timeGoals.collectAsState()
     val activeTimeGoal by viewModel.activeTimeGoal.collectAsState()
     var showDeleteDialog by remember { mutableStateOf<TimeGoal?>(null) }
+    var showOptionsDialog by remember { mutableStateOf<TimeGoal?>(null) }
+    var showManualInputDialog by remember { mutableStateOf<TimeGoal?>(null) }
     val context = LocalContext.current
 
     LaunchedEffect(activeTimeGoal) {
@@ -71,7 +73,7 @@ fun TimeGoalsScreen(viewModel: TimeGoalsViewModel = viewModel(), navController: 
                         isActive = isActive,
                         onStartGoal = { viewModel.onStartTimer(context, timeGoal) },
                         onActiveClick = { navController.navigate("timer_screen") },
-                        onLongPress = { showDeleteDialog = timeGoal }
+                        onLongPress = { showOptionsDialog = timeGoal }
                     )
                 }
             }
@@ -93,13 +95,50 @@ fun TimeGoalsScreen(viewModel: TimeGoalsViewModel = viewModel(), navController: 
         )
     }
 
+    showOptionsDialog?.let { timeGoal ->
+        AlertDialog(
+            onDismissRequest = { showOptionsDialog = null },
+            title = { Text("Choose an action") },
+            text = { Text("What would you like to do with ${timeGoal.title}?") },
+            confirmButton = {
+                TextButton(onClick = {
+                    showOptionsDialog = null
+                    showManualInputDialog = timeGoal
+                }) {
+                    Text("Manual Time Input")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = {
+                    showOptionsDialog = null
+                    showDeleteDialog = timeGoal
+                }) {
+                    Text("Delete Goal")
+                }
+            }
+        )
+    }
+
+    showManualInputDialog?.let { timeGoal ->
+        ManualTimeInputDialog(
+            timeGoal = timeGoal,
+            onDismiss = { showManualInputDialog = null },
+            onAddTime = { hours, minutes ->
+                viewModel.onAddManualTime(timeGoal, hours, minutes)
+            }
+        )
+    }
+
     showDeleteDialog?.let { timeGoal ->
         AlertDialog(
             onDismissRequest = { showDeleteDialog = null },
             title = { Text("Delete Time Goal") },
             text = { Text("Are you sure you want to delete this time goal?") },
             confirmButton = {
-                TextButton(onClick = { viewModel.onDeleteTimeGoal(timeGoal); showDeleteDialog = null }) {
+                TextButton(onClick = {
+                    viewModel.onDeleteTimeGoal(timeGoal)
+                    showDeleteDialog = null
+                }) {
                     Text("Delete")
                 }
             },
@@ -215,6 +254,57 @@ private fun AddGoalDialog(
         },
         dismissButton = {
             TextButton(onClick = onCancel) {
+                Text("Cancel")
+            }
+        }
+    )
+}
+
+@Composable
+private fun ManualTimeInputDialog(
+    timeGoal: TimeGoal,
+    onDismiss: () -> Unit,
+    onAddTime: (hours: String, minutes: String) -> Unit
+) {
+    var manualHours by remember { mutableStateOf("") }
+    var manualMinutes by remember { mutableStateOf("") }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Manual Time Input") },
+        text = {
+            Column {
+                Text("Add time for ${timeGoal.title}")
+                Spacer(Modifier.height(8.dp))
+                Row(modifier = Modifier.fillMaxWidth()) {
+                    TextField(
+                        value = manualHours,
+                        onValueChange = { manualHours = it },
+                        label = { Text("Hours") },
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                        modifier = Modifier.weight(1f)
+                    )
+                    Spacer(Modifier.width(8.dp))
+                    TextField(
+                        value = manualMinutes,
+                        onValueChange = { manualMinutes = it },
+                        label = { Text("Minutes") },
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                        modifier = Modifier.weight(1f)
+                    )
+                }
+            }
+        },
+        confirmButton = {
+            Button(onClick = {
+                onAddTime(manualHours, manualMinutes)
+                onDismiss()
+            }) {
+                Text("Add")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
                 Text("Cancel")
             }
         }

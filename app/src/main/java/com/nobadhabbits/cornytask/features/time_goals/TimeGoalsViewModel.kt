@@ -78,4 +78,15 @@ class TimeGoalsViewModel(application: Application) : AndroidViewModel(applicatio
             timeGoalRepository.deleteTimeGoal(timeGoal.id)
         }
     }
+
+    fun onAddManualTime(timeGoal: TimeGoal, hours: String, minutes: String) {
+        viewModelScope.launch {
+            val manualHours = hours.toLongOrNull() ?: 0L
+            val manualMinutes = minutes.toLongOrNull() ?: 0L
+            val totalManualTime = (manualHours * 60) + manualMinutes
+            if (totalManualTime > 0) {
+                timeGoalRepository.addManualTime(timeGoal, totalManualTime)
+            }
+        }
+    }
 }

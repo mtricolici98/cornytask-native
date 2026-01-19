@@ -1,6 +1,8 @@
 package com.nobadhabbits.cornytask.features.time_goals
 
+import com.nobadhabbits.cornytask.data.History
 import com.nobadhabbits.cornytask.data.TimeGoal
+import com.nobadhabbits.cornytask.features.history.HistoryRepository
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.DocumentReference
 import com.google.firebase.firestore.FirebaseFirestore
@@ -13,11 +15,15 @@ class TimeGoalRepository {
 
     private val firestore = FirebaseFirestore.getInstance()
     private val auth = FirebaseAuth.getInstance()
+    private val historyRepository = HistoryRepository()
 
     private val timeGoalsCollection
         get() = firestore.collection("users").document(auth.currentUser!!.uid).collection("timeGoals")
 
-    fun  getTimeGoalsFlow(): Flow<List<TimeGoal>> = callbackFlow {
+    private val userDocument
+        get() = firestore.collection("users").document(auth.currentUser!!.uid)
+
+    fun getTimeGoalsFlow(): Flow<List<TimeGoal>> = callbackFlow {
         val subscription = timeGoalsCollection
             .orderBy("createdAt", Query.Direction.DESCENDING)
             .addSnapshotListener { snapshot, error ->
@@ -54,5 +60,36 @@ class TimeGoalRepository {
 
     fun deleteTimeGoal(timeGoalId: String) {
         timeGoalsCollection.document(timeGoalId).delete()
+    }
+
+    fun addManualTime(timeGoal: TimeGoal, manualTimeMinutes: Long) {
+        val wasCompleted = timeGoal.remainingTimeMinutes <= 0
+        val newRemainingTime = (timeGoal.remainingTimeMinutes - manualTimeMinutes).coerceAtLeast(0)
+        val updatedGoal = timeGoal.copy(remainingTimeMinutes = newRemainingTime)
+        updateTimeGoal(updatedGoal)
+
+        val historyEntry = History(
+            title = "Manually added time for '${timeGoal.title}'",
+            rewardCoins = 0,
+            type = "TIME_GOAL",
+            durationMinutes = manualTimeMinutes,
+            timeGoalId = timeGoal.id
+        )
+        historyRepository.addHistoryEntry(historyEntry)
+
+        val isNowCompleted = newRemainingTime <= 0
+        if (!wasCompleted && isNowCompleted) {
+            userDocument.get().addOnSuccessListener { userDoc ->
+                val currentCoins = userDoc.getLong("coins") ?: 0L
+                userDocument.update("coins", currentCoins + timeGoal.rewardCoins)
+                val completionHistory = History(
+                    title = "Completed: ${timeGoal.title}",
+                    rewardCoins = timeGoal.rewardCoins,
+                    type = "TIME_GOAL",
+                    timeGoalId = timeGoal.id
+                )
+                historyRepository.addHistoryEntry(completionHistory)
+            }
+        }
     }
 }
