@@ -41,6 +41,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.nobadhabbits.cornytask.data.TimeGoal
+import com.nobadhabbits.cornytask.ui.theme.Purple40
 
 @Composable
 fun TimeGoalsScreen(viewModel: TimeGoalsViewModel = viewModel(), navController: NavController) {
@@ -63,7 +64,7 @@ fun TimeGoalsScreen(viewModel: TimeGoalsViewModel = viewModel(), navController: 
                 Icon(Icons.Default.Add, contentDescription = "Add a new time goal")
             }
         }
-    ) {
+    ) { 
         LazyColumn(modifier = Modifier.padding(it)) {
             items(timeGoals) { timeGoal ->
                 key(timeGoal.id) {
@@ -181,7 +182,7 @@ private fun TimeGoalItem(
         trailingContent = {
             if (isActive) {
                 Button(onClick = onActiveClick) {
-                    Text("Active", color = Color.Green, fontWeight = FontWeight.Bold)
+                    Text("Active", color = Purple40, fontWeight = FontWeight.Bold)
                 }
             } else {
                 Button(onClick = onStartGoal, enabled = timeGoal.remainingTimeMinutes > 0) {

@@ -41,7 +41,13 @@ class UserRepository {
                         // Launch in the flow's scope to perform the async operation
                         this.launch {
                             try {
-                                val newUser = User(uid = user.uid, coins = 0, firstLogin = true)
+                                val newUser = User(
+                                    uid = user.uid,
+                                    coins = 0,
+                                    firstLogin = true,
+                                    activeTimeGoalId = null,
+                                    activeTimeGoalStartTimeMillis = null
+                                )
                                 userDocRef.set(newUser)
                                 // The listener will fire again automatically with the new data,
                                 // but we can send it immediately to be faster.
@@ -83,9 +89,6 @@ class UserRepository {
     fun spendCoins(amount: Int) {
         val uid = auth.currentUser?.uid ?: return
         val userDoc = firestore.collection("users").document(uid)
-        // Using a transaction to ensure coins don't go negative would not work offline.
-        // It is assumed that the UI will prevent the user from spending more coins than they have.
-        // For full offline support, this is a necessary trade-off.
         userDoc.update("coins", FieldValue.increment(-amount.toLong()))
     }
 
@@ -99,5 +102,25 @@ class UserRepository {
         firestore.collection("users").document(user.uid).delete().await()
         user.delete().await()
         auth.signOut()
+    }
+
+    fun setActiveTimeGoal(goalId: String, startTimeMillis: Long) {
+        val uid = auth.currentUser?.uid ?: return
+        firestore.collection("users").document(uid).update(
+            mapOf(
+                "activeTimeGoalId" to goalId,
+                "activeTimeGoalStartTimeMillis" to startTimeMillis
+            )
+        )
+    }
+
+    fun clearActiveTimeGoal() {
+        val uid = auth.currentUser?.uid ?: return
+        firestore.collection("users").document(uid).update(
+            mapOf(
+                "activeTimeGoalId" to null,
+                "activeTimeGoalStartTimeMillis" to null
+            )
+        )
     }
 }

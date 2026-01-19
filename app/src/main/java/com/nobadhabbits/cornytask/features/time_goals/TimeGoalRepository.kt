@@ -10,6 +10,7 @@ import com.google.firebase.firestore.Query
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
+import kotlinx.coroutines.tasks.await
 
 class TimeGoalRepository {
 
@@ -37,6 +38,17 @@ class TimeGoalRepository {
                 }
             }
         awaitClose { subscription.remove() }
+    }
+
+    suspend fun getTimeGoal(goalId: String?): TimeGoal? {
+        if(goalId.isNullOrEmpty()) {
+            return null
+        }
+        return try {
+            timeGoalsCollection.document(goalId).get().await().toObject(TimeGoal::class.java)
+        } catch (e: Exception) {
+            null
+        }
     }
 
     fun addTimeGoal(title: String, totalTimeMinutes: Long, rewardCoins: Int) {

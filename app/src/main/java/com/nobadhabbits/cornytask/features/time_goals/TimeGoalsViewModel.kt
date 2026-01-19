@@ -27,7 +27,7 @@ class TimeGoalsViewModel(application: Application) : AndroidViewModel(applicatio
             is TimeGoalManager.TimerState.Running -> it.goal
             else -> null
         }
-    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
+    }.stateIn(viewModelScope, SharingStarted.Eagerly, null)
 
     var isAddingTimeGoal by mutableStateOf(false)
     var newTimeGoalTitle by mutableStateOf("")

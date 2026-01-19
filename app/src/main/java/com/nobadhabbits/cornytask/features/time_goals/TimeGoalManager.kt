@@ -1,16 +1,14 @@
 package com.nobadhabbits.cornytask.features.time_goals
 
 import android.os.CountDownTimer
-import com.nobadhabbits.cornytask.data.History
 import com.nobadhabbits.cornytask.data.TimeGoal
-import com.nobadhabbits.cornytask.features.history.HistoryRepository
 import com.nobadhabbits.cornytask.features.user.UserRepository
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import java.util.concurrent.TimeUnit
 
@@ -26,18 +24,49 @@ object TimeGoalManager {
 
     private var countDownTimer: CountDownTimer? = null
     private val timeGoalRepository = TimeGoalRepository()
-    private val historyRepository = HistoryRepository()
     private val userRepository = UserRepository()
-    private val ioScope = CoroutineScope(Dispatchers.IO)
-    private val mainScope = CoroutineScope(Dispatchers.Main + SupervisorJob())
+    private val managerScope = CoroutineScope(Dispatchers.Main + SupervisorJob())
     private var totalDurationMillisForCurrentTimer: Long = 0L
     private val timeTrackingRepository = TimeTrackingRepository()
 
+    init {
+        managerScope.launch {
+            userRepository.getUserFlow().collectLatest { user ->
+                val activeGoalId = user?.activeTimeGoalId
+                val startTimeMillis = user?.activeTimeGoalStartTimeMillis
+
+                if (activeGoalId != null && startTimeMillis != null) {
+                    val currentTimerGoalId = (timerState.value as? TimerState.Running)?.goal?.id
+                    if (activeGoalId != currentTimerGoalId) {
+                        val goal = timeGoalRepository.getTimeGoal(activeGoalId)
+                        if (goal != null) {
+                            val elapsedMillis = System.currentTimeMillis() - startTimeMillis
+                            val remainingMillis = (goal.totalTimeMinutes * 60 * 1000) - elapsedMillis
+                            if (remainingMillis > 0) {
+                                startTimer(goal, remainingMillis)
+                            } else {
+                                handleFinish(goal, goal.totalTimeMinutes * 60 * 1000)
+                                userRepository.clearActiveTimeGoal()
+                            }
+                        }
+                    }
+                } else {
+                    if (timerState.value is TimerState.Running || timerState.value is TimerState.Finished) {
+                        stopTimer()
+                    }
+                }
+            }
+        }
+    }
+
     fun startTimer(timeGoal: TimeGoal, durationMillis: Long) {
-        mainScope.launch {
+        managerScope.launch {
             countDownTimer?.cancel()
             totalDurationMillisForCurrentTimer = durationMillis
             _timerState.value = TimerState.Running(timeGoal, durationMillis, durationMillis)
+
+            val startTimeMillis = System.currentTimeMillis()
+            userRepository.setActiveTimeGoal(timeGoal.id, startTimeMillis)
 
             countDownTimer = object : CountDownTimer(durationMillis, 1000) {
                 override fun onTick(millisUntilFinished: Long) {
@@ -46,43 +75,49 @@ object TimeGoalManager {
 
                 override fun onFinish() {
                     _timerState.value = TimerState.Finished(timeGoal, totalDurationMillisForCurrentTimer)
-                    handleFinish(timeGoal, totalDurationMillisForCurrentTimer)
+                    stopTimer()
                 }
             }.start()
         }
     }
 
     fun stopTimer() {
-        mainScope.launch {
+        managerScope.launch {
             val currentState = _timerState.value
-            if (currentState is TimerState.Running) {
+            val runningState = when (currentState) {
+                is TimerState.Running -> currentState
+                is TimerState.Finished -> TimerState.Running(currentState.goal, 0, currentState.totalDurationMillis)
+                else -> null
+            }
+
+            if (runningState != null) {
                 countDownTimer?.cancel()
-                val elapsedMillis = totalDurationMillisForCurrentTimer - currentState.remainingMillis
-                handleStop(currentState.goal.id, elapsedMillis)
-                _timerState.value = TimerState.Idle
+
+                val user = userRepository.fetchCurrentUser()
+                if (user?.activeTimeGoalId == runningState.goal.id) {
+                    userRepository.clearActiveTimeGoal()
+
+                    val startTimeMillis = user.activeTimeGoalStartTimeMillis ?: System.currentTimeMillis()
+                    val elapsedMillis = System.currentTimeMillis() - startTimeMillis
+                    handleStop(runningState.goal, elapsedMillis)
+                }
+
+                if (currentState !is TimerState.Finished) {
+                    _timerState.value = TimerState.Idle
+                }
             }
         }
     }
 
-    private fun handleStop(goalId: String, elapsedMillis: Long) {
-        ioScope.launch {
-            val timeGoal = timeGoalRepository.getTimeGoalsFlow().first().find { it.id == goalId } ?: return@launch
-            val elapsedMinutes = TimeUnit.MILLISECONDS.toMinutes(elapsedMillis)
-            if (elapsedMinutes > 0) {
-                timeTrackingRepository.applyElapsedTime(timeGoal, elapsedMinutes)
-            }
+    private fun handleStop(timeGoal: TimeGoal, elapsedMillis: Long) {
+        val elapsedMinutes = TimeUnit.MILLISECONDS.toMinutes(elapsedMillis)
+        if (elapsedMinutes > 0) {
+            timeTrackingRepository.applyElapsedTime(timeGoal, elapsedMinutes)
         }
     }
 
     private fun handleFinish(timeGoal: TimeGoal, durationMillis: Long) {
-        ioScope.launch {
-
-            val durationMinutes = TimeUnit.MILLISECONDS.toMinutes(durationMillis)
-            timeTrackingRepository.applyElapsedTime(timeGoal, durationMinutes);
-            val newRemainingTime = timeGoal.remainingTimeMinutes - durationMinutes
-            if (newRemainingTime <= 0) {
-                userRepository.addCoins(timeGoal.rewardCoins)
-            }
-        }
+        val durationMinutes = TimeUnit.MILLISECONDS.toMinutes(durationMillis)
+        timeTrackingRepository.applyElapsedTime(timeGoal, durationMinutes)
     }
 }
