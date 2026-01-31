@@ -16,13 +16,16 @@ import com.nobadhabbits.cornytask.features.main.MoreScreen as MoreScreenItems
 @Composable
 fun MoreScreen(navController: NavController) {
     val items = listOf(
-//        MoreScreenItems.History,
+        MoreScreenItems.History,
         MoreScreenItems.Notes,
+        MoreScreenItems.Settings
     )
 
-    Column(modifier = Modifier
-        .fillMaxSize()
-        .padding(8.dp)) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(8.dp)
+    ) {
         items.forEach { screen ->
             ListItem(
                 headlineContent = { Text(screen.title) },

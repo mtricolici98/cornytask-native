@@ -54,10 +54,12 @@ import androidx.glance.appwidget.state.updateAppWidgetState
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavDestination.Companion.hierarchy
 import androidx.navigation.NavGraph.Companion.findStartDestination
+import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navArgument
 import androidx.navigation.navigation
 import com.google.android.gms.auth.api.signin.GoogleSignIn
 import com.google.android.gms.auth.api.signin.GoogleSignInClient
@@ -65,6 +67,10 @@ import com.google.android.gms.auth.api.signin.GoogleSignInOptions
 import com.nobadhabbits.cornytask.R
 import com.nobadhabbits.cornytask.features.history.HistoryScreen
 import com.nobadhabbits.cornytask.features.login.LoginActivity
+import com.nobadhabbits.cornytask.features.main.MoreScreen as MoreScreenItems
+import com.nobadhabbits.cornytask.features.more.MoreScreen
+import com.nobadhabbits.cornytask.features.notes.EditNoteScreen
+import com.nobadhabbits.cornytask.features.notes.NotesScreen
 import com.nobadhabbits.cornytask.features.rewards.RewardsScreen
 import com.nobadhabbits.cornytask.features.settings.SettingsScreen
 import com.nobadhabbits.cornytask.features.time_goals.TimeGoalsScreen
@@ -182,13 +188,15 @@ fun MainScreen(onSignOut: () -> Unit, userViewModel: UserViewModel = viewModel()
             TopAppBar(
                 title = { Text("CornyTask") },
                 actions = {
-                    user?.let { CoinPill(coins = it.coins, onClick = {navController.navigate(Screen.Rewards.route) {
-                        popUpTo(navController.graph.findStartDestination().id) {
-                            saveState = true
-                        }
-                        launchSingleTop = true
-                        restoreState = true
-                    } }) }
+                    user?.let { coinPill ->
+                        CoinPill(coins = coinPill.coins, onClick = {navController.navigate(Screen.Rewards.route) {
+                            popUpTo(navController.graph.findStartDestination().id) {
+                                saveState = true
+                            }
+                            launchSingleTop = true
+                            restoreState = true
+                        } })
+                    }
                     Box {
                         IconButton(onClick = { showMenu = !showMenu }) {
                             Icon(Icons.Default.MoreVert, contentDescription = "More")
@@ -197,19 +205,6 @@ fun MainScreen(onSignOut: () -> Unit, userViewModel: UserViewModel = viewModel()
                             expanded = showMenu,
                             onDismissRequest = { showMenu = false }
                         ) {
-                            DropdownMenuItem(
-                                text = { Text("Settings") },
-                                onClick = {
-                                    showMenu = false
-                                    navController.navigate(Screen.Settings.route) {
-                                        popUpTo(navController.graph.findStartDestination().id) {
-                                            saveState = true
-                                        }
-                                        launchSingleTop = true
-                                        restoreState = true
-                                    }
-                                }
-                            )
                             DropdownMenuItem(
                                 text = { Text("Sign out") },
                                 onClick = {
@@ -243,7 +238,7 @@ fun MainScreen(onSignOut: () -> Unit, userViewModel: UserViewModel = viewModel()
                     Screen.Todo,
                     Screen.Rewards,
                     Screen.TimeGoals,
-                    Screen.History
+                    Screen.More
                 )
                 items.forEach { screen ->
                     NavigationBarItem(
@@ -282,8 +277,25 @@ fun MainScreen(onSignOut: () -> Unit, userViewModel: UserViewModel = viewModel()
                 composable("TimeGoalsMain") { TimeGoalsScreen(navController = navController) }
                 composable("timer_screen") { TimerScreen(navController = navController) }
             }
-            composable(Screen.History.route) { HistoryScreen() }
-            composable(Screen.Settings.route) { SettingsScreen(onSignOut) }
+
+            navigation(startDestination = "more_main", route = Screen.More.route) {
+                composable("more_main") { MoreScreen(navController = navController) }
+                composable(MoreScreenItems.History.route) { HistoryScreen() }
+                composable(MoreScreenItems.Notes.route) { NotesScreen(navController = navController) }
+                composable(
+                    "edit_note/{noteId}",
+                    arguments = listOf(navArgument("noteId") { type = NavType.StringType })
+                ) { backStackEntry ->
+                    EditNoteScreen(
+                        navController = navController,
+                        noteId = backStackEntry.arguments?.getString("noteId")
+                    )
+                }
+                composable("edit_note") {
+                    EditNoteScreen(navController = navController, noteId = null)
+                }
+                composable(MoreScreenItems.Settings.route) { SettingsScreen(onSignOut) }
+            }
         }
     }
 }

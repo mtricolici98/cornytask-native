@@ -18,6 +18,7 @@ navigationCompose = "2.9.6"
 playServicesAuth = "21.4.0"
 material3 = "1.4.0"
 runtimeLivedata = "1.10.1"
+richeditor = "1.0.0-beta03"
 
 [libraries]
 androidx-compose-material3-pull-to-refresh = { module = "androidx.compose.material3:material3-pull-to-refresh" }
@@ -46,7 +47,7 @@ kotlinx-coroutines-play-services = { group = "org.jetbrains.kotlinx", name = "ko
 play-services-auth = { module = "com.google.android.gms:play-services-auth", version.ref = "playServicesAuth" }
 androidx-material3 = { group = "androidx.compose.material3", name = "material3", version.ref = "material3" }
 androidx-compose-runtime-livedata = { group = "androidx.compose.runtime", name = "runtime-livedata", version.ref = "runtimeLivedata" }
-
+richeditor = { module = "com.mohamedrejeb.richeditor:richeditor-compose", version.ref = "richeditor" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

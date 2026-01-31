@@ -15,8 +15,8 @@ android {
         applicationId = "com.nobadhabbits.cornytask"
         minSdk = 26
         targetSdk = 36
-        versionCode = 6
-        versionName = "1.5"
+        versionCode = 8
+        versionName = "1.7"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -82,6 +82,7 @@ dependencies {
     // Calendar
     implementation("com.kizitonwose.calendar:compose:2.9.0")
     implementation("org.jetbrains.kotlinx:kotlinx-datetime:0.6.0")
+    implementation("com.mohamedrejeb.richeditor:richeditor-compose:1.0.0-rc13")
 
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
