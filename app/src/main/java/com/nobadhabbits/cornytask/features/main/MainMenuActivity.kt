@@ -13,9 +13,14 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.WindowInsetsSides
+import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
@@ -44,10 +49,12 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.modifier.modifierLocalConsumer
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
+import androidx.core.view.WindowCompat
 import androidx.fragment.app.FragmentActivity
 import androidx.glance.appwidget.GlanceAppWidgetManager
 import androidx.glance.appwidget.state.updateAppWidgetState
@@ -115,6 +122,7 @@ class MainMenuActivity : FragmentActivity() {
 
         googleSignInClient = GoogleSignIn.getClient(this, gso)
 
+        WindowCompat.setDecorFitsSystemWindows(window, false)
         setContent {
             Cornytaskv2Theme {
                 MainScreen(onSignOut = ::signOut)
@@ -182,8 +190,16 @@ fun MainScreen(onSignOut: () -> Unit, userViewModel: UserViewModel = viewModel()
         }
     }
 
-
+    val showBottomBar = when (currentDestination?.route) {
+        "edit_note", "edit_note/{noteId}" -> false
+        else -> true
+    }
     Scaffold(
+        modifier = Modifier.windowInsetsPadding(
+            WindowInsets.safeDrawing.only(
+                WindowInsetsSides.Top + WindowInsetsSides.Horizontal
+            )
+            ),
         topBar = {
             TopAppBar(
                 title = { Text("CornyTask") },
@@ -233,6 +249,8 @@ fun MainScreen(onSignOut: () -> Unit, userViewModel: UserViewModel = viewModel()
             }
         },
         bottomBar = {
+            if (showBottomBar) {
+
             NavigationBar {
                 val items = listOf(
                     Screen.Todo,
@@ -263,6 +281,7 @@ fun MainScreen(onSignOut: () -> Unit, userViewModel: UserViewModel = viewModel()
                         )
                     )
                 }
+            }
             }
         }
     ) { innerPadding ->

@@ -1,10 +1,22 @@
 package com.nobadhabbits.cornytask.features.notes
 
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.WindowInsetsSides
+import androidx.compose.foundation.layout.consumeWindowInsets
+import androidx.compose.foundation.layout.exclude
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.ime
+import androidx.compose.foundation.layout.imeAnimationTarget
+import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.layout.navigationBars
+import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.safeDrawing
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Done
 import androidx.compose.material.icons.filled.FormatBold
@@ -27,6 +39,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
@@ -38,8 +51,7 @@ import com.mohamedrejeb.richeditor.model.RichTextState
 import com.mohamedrejeb.richeditor.model.rememberRichTextState
 import com.mohamedrejeb.richeditor.ui.material3.RichTextEditor
 import com.nobadhabbits.cornytask.data.Note
-
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
 fun EditNoteScreen(
     navController: NavController,
@@ -60,21 +72,30 @@ fun EditNoteScreen(
         }
     }
 
+    // Key: use animation *target* IME insets, and exclude nav bars
+    val imeNoNav = WindowInsets.imeAnimationTarget
+        .exclude(WindowInsets.navigationBars)
+        .only(WindowInsetsSides.Bottom)
     Scaffold(
+        contentWindowInsets = WindowInsets(0, 0, 0, 0),
         floatingActionButton = {
-            FloatingActionButton(onClick = {
-                val newNote = note?.copy(title = title, content = state.toHtml())
-                    ?: Note(title = title, content = state.toHtml())
-                viewModel.saveNote(newNote)
-                navController.popBackStack()
-            }) {
+            FloatingActionButton(
+                onClick = {
+                    val newNote = note?.copy(title = title, content = state.toHtml())
+                        ?: Note(title = title, content = state.toHtml())
+                    viewModel.saveNote(newNote)
+                    navController.popBackStack()
+                },
+                modifier = Modifier.windowInsetsPadding(imeNoNav)
+            ) {
                 Icon(Icons.Default.Done, contentDescription = "Save Note")
             }
         }
-    ) { padding ->
+    ) { innerPadding ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
+                .consumeWindowInsets(innerPadding)
         ) {
             OutlinedTextField(
                 value = title,
@@ -87,11 +108,18 @@ fun EditNoteScreen(
 
             RichTextEditor(
                 state = state,
-                modifier = Modifier.weight(1f).fillMaxWidth()
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxWidth()
+                    .padding(1.dp)
+                    .windowInsetsPadding(imeNoNav),
+
             )
         }
     }
 }
+
+
 
 @Composable
 fun RichTextStyleToolbar(state: RichTextState) {

@@ -83,6 +83,8 @@ dependencies {
     implementation("com.kizitonwose.calendar:compose:2.9.0")
     implementation("org.jetbrains.kotlinx:kotlinx-datetime:0.6.0")
     implementation("com.mohamedrejeb.richeditor:richeditor-compose:1.0.0-rc13")
+    implementation(libs.androidx.foundation)
+
 
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)

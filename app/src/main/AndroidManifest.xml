@@ -2,12 +2,7 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
 
-    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
-    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
-    <uses-permission android:name="android.permission.USE_CREDENTIALS" />
-    <uses-permission android:name="android.permission.GET_ACCOUNTS" />
-    <uses-permission android:name="android.permission.INTERNET" />
 
     <application
         android:allowBackup="true"
@@ -17,16 +12,30 @@
         android:label="@string/app_name"
         android:roundIcon="@drawable/unicorn_logo"
         android:supportsRtl="true"
-        android:theme="@style/Theme.Cornytaskv2">
+        android:theme="@style/Theme.Cornytaskv2"
+        tools:targetApi="31">
+
+        <activity
+            android:name=".features.main.MainMenuActivity"
+            android:exported="true"
+            android:theme="@style/Theme.Cornytaskv2"
+            android:windowSoftInputMode="adjustNothing">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+
+        <activity
+            android:name=".features.login.LoginActivity"
+            android:exported="false" />
+
+        <activity
+            android:name=".features.todo.AddTodoActivity"
+            android:exported="false" />
 
         <service
-            android:name=".features.time_goals.TimeGoalService"
-            android:enabled="true"
-            android:exported="false"
-            android:foregroundServiceType="dataSync" />
-
-        <service
-            android:name=".services.MyFirebaseMessagingService"
+            android:name=".features.messaging.CornyMessagingService"
             android:exported="false">
             <intent-filter>
                 <action android:name="com.google.firebase.MESSAGING_EVENT" />
@@ -34,65 +43,16 @@
         </service>
 
         <receiver
-            android:name=".features.widget.TodoWidgetReceiver"
+            android:name=".features.widget.TodoWidget"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
-                <action android:name="com.nobadhabbits.cornytask.ACTION_DATA_UPDATED" />
             </intent-filter>
+
             <meta-data
                 android:name="android.appwidget.provider"
                 android:resource="@xml/todo_widget_info" />
         </receiver>
-
-        <activity
-            android:name=".features.login.LoginActivity"
-            android:exported="false"
-            android:label="Login"
-            android:theme="@style/Theme.Cornytaskv2" />
-        <activity
-            android:name=".features.main.MainMenuActivity"
-            android:exported="true"
-            android:label="Main Menu"
-            android:theme="@style/Theme.Cornytaskv2" >
-            <meta-data
-                android:name="android.app.shortcuts"
-                android:resource="@xml/shortcuts" />
-        </activity>
-
-        <activity
-            android:name=".features.todo.CreateTodoFromAssistantActivity"
-            android:exported="true"
-            android:label="Create todo"
-            android:theme="@style/Theme.Cornytaskv2" />
-
-        <activity
-            android:name=".features.todo.AddTodoActivity"
-            android:exported="false"
-            android:resizeableActivity="true"
-            android:launchMode="singleTop"
-            android:label="Add Todo"
-            android:theme="@style/Theme.Cornytaskv2" />
-
-        <activity
-            android:name=".features.todo.EditTodoActivity"
-            android:exported="false"
-            android:resizeableActivity="true"
-            android:launchMode="singleTop"
-            android:label="Edit todo"
-            android:theme="@style/Theme.Cornytaskv2" />
-
-        <activity
-            android:name=".MainActivity"
-            android:exported="true"
-            android:label="@string/app_name"
-            android:theme="@style/Theme.Cornytaskv2">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-
-                <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
-        </activity>
     </application>
 
 </manifest>
