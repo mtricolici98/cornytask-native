@@ -1,12 +1,15 @@
 package com.nobadhabbits.cornytask.features.todo
 
 import android.app.Application
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
@@ -20,6 +23,7 @@ import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
+import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.material3.TimePicker
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.rememberDatePickerState
@@ -54,8 +58,10 @@ fun EditTodoScreen(onNavigateUp: () -> Unit) {
     var showTimePicker by remember { mutableStateOf(false) }
     val dateFormatter = remember { SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault()) }
     var date by remember { mutableStateOf<Date?>(null) }
-    var showDueDateOptions by remember { mutableStateOf(false) }
-    val dueDateOptions = listOf("In 1 hour", "In 4 hours", "Tomorrow", "In 2 days", "Custom")
+
+    var tempDate by remember { mutableStateOf<Date?>(null) }
+    var tempHour by remember { mutableStateOf(0) }
+    var tempMinute by remember { mutableStateOf(0) }
 
 
     LaunchedEffect(todoId) {
@@ -63,23 +69,27 @@ fun EditTodoScreen(onNavigateUp: () -> Unit) {
             viewModel.loadTodo(it)
         }
     }
-
     if (showDatePicker) {
         val cal = Calendar.getInstance()
-        viewModel.dueDate?.let { cal.time = it }
+        tempDate?.let { cal.time = it } ?: run {
+            viewModel.dueDate?.let { cal.time = it }
+        }
+
         val datePickerState = rememberDatePickerState(initialSelectedDateMillis = cal.timeInMillis)
+
         DatePickerDialog(
             onDismissRequest = { showDatePicker = false },
             confirmButton = {
                 Button(
                     onClick = {
-                        datePickerState.selectedDateMillis?.let {
-                            date = Date(it)
+                        datePickerState.selectedDateMillis?.let { millis ->
+                            // Keep the chosen date in tempDate; time comes next
+                            tempDate = Date(millis)
                         }
                         showDatePicker = false
                         showTimePicker = true
                     }
-                ) { Text("OK") }
+                ) { Text("Next") }
             },
             dismissButton = {
                 Button(onClick = { showDatePicker = false }) { Text("Cancel") }
@@ -91,35 +101,66 @@ fun EditTodoScreen(onNavigateUp: () -> Unit) {
 
     if (showTimePicker) {
         val cal = Calendar.getInstance()
-        viewModel.dueDate?.let { cal.time = it }
+        // If tempDate exists use it; else seed from dueDate/now
+        (tempDate ?: viewModel.dueDate)?.let { cal.time = it }
+
         val timePickerState = rememberTimePickerState(
-            initialHour = cal.get(Calendar.HOUR_OF_DAY),
-            initialMinute = cal.get(Calendar.MINUTE)
+            initialHour = tempHour.takeIf { it in 0..23 } ?: cal.get(Calendar.HOUR_OF_DAY),
+            initialMinute = tempMinute.takeIf { it in 0..59 } ?: cal.get(Calendar.MINUTE)
         )
+
         DatePickerDialog(
             onDismissRequest = { showTimePicker = false },
             confirmButton = {
                 Button(
                     onClick = {
+                        // Save latest time into temp vars (optional but nice)
+                        tempHour = timePickerState.hour
+                        tempMinute = timePickerState.minute
+
                         val resultCal = Calendar.getInstance()
-                        date?.let { resultCal.time = it }
+                        val baseDate = tempDate ?: viewModel.dueDate ?: Date()
+                        resultCal.time = baseDate
                         resultCal.set(Calendar.HOUR_OF_DAY, timePickerState.hour)
                         resultCal.set(Calendar.MINUTE, timePickerState.minute)
+                        resultCal.set(Calendar.SECOND, 0)
+                        resultCal.set(Calendar.MILLISECOND, 0)
+
                         viewModel.onDueDateChanged(resultCal.time)
                         showTimePicker = false
                     }
                 ) { Text("OK") }
             },
             dismissButton = {
-                Button(onClick = { showTimePicker = false }) { Text("Cancel") }
+                // Back + Cancel in the dismiss slot
+                Row {
+                    Button(
+                        onClick = {
+                            // store current time so it doesn't "reset" when going back
+                            tempHour = timePickerState.hour
+                            tempMinute = timePickerState.minute
+
+                            showTimePicker = false
+                            showDatePicker = true
+                        }
+                    ) { Text("Back") }
+
+                    Spacer(Modifier.width(8.dp))
+
+                    Button(onClick = { showTimePicker = false }) { Text("Cancel") }
+                }
             }
         ) {
             Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
-                TimePicker(state = timePickerState, modifier = Modifier.fillMaxWidth().padding(12.dp))
+                TimePicker(
+                    state = timePickerState,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(12.dp)
+                )
             }
         }
     }
-
     Scaffold(
         topBar = { TopAppBar(title = { Text("Edit To-do") }) }
     ) {
@@ -162,47 +203,37 @@ fun EditTodoScreen(onNavigateUp: () -> Unit) {
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            ExposedDropdownMenuBox(
-                expanded = showDueDateOptions,
-                onExpandedChange = { showDueDateOptions = !showDueDateOptions }
+
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable {
+                        val cal = Calendar.getInstance()
+                        val existing = viewModel.dueDate
+                        if (existing != null) cal.time = existing
+
+                        tempDate = cal.time
+                        tempHour = cal.get(Calendar.HOUR_OF_DAY)
+                        tempMinute = cal.get(Calendar.MINUTE)
+
+                        if (existing != null) showTimePicker = true else showDatePicker = true
+                    }
             ) {
                 TextField(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .menuAnchor(),
+                    modifier = Modifier.fillMaxWidth(),
+                    enabled = false,          // important: prevents TextField from consuming the click
                     readOnly = true,
                     value = viewModel.dueDate?.let { dateFormatter.format(it) } ?: "",
                     onValueChange = {},
                     label = { Text("Due Date") },
-                    trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = showDueDateOptions) },
+                    colors = TextFieldDefaults.colors(
+                        // make it LOOK enabled even though enabled=false
+                        disabledTextColor = TextFieldDefaults.colors().focusedTextColor,
+                        disabledLabelColor = TextFieldDefaults.colors().focusedLabelColor,
+                        disabledIndicatorColor = TextFieldDefaults.colors().focusedIndicatorColor,
+                        disabledContainerColor = TextFieldDefaults.colors().focusedContainerColor
+                    )
                 )
-                ExposedDropdownMenu(
-                    expanded = showDueDateOptions,
-                    onDismissRequest = { showDueDateOptions = false },
-                ) {
-                    dueDateOptions.forEach { selectionOption ->
-                        DropdownMenuItem(
-                            text = { Text(selectionOption) },
-                            onClick = {
-                                val cal = Calendar.getInstance()
-                                when (selectionOption) {
-                                    "In 1 hour" -> cal.add(Calendar.HOUR_OF_DAY, 1)
-                                    "In 4 hours" -> cal.add(Calendar.HOUR_OF_DAY, 4)
-                                    "Tomorrow" -> cal.add(Calendar.DAY_OF_YEAR, 1)
-                                    "In 2 days" -> cal.add(Calendar.DAY_OF_YEAR, 2)
-                                    "Custom" -> {
-                                        showDatePicker = true
-                                        showDueDateOptions = false
-                                        return@DropdownMenuItem
-                                    }
-                                }
-                                viewModel.onDueDateChanged(cal.time)
-                                showDueDateOptions = false
-                            },
-                            contentPadding = ExposedDropdownMenuDefaults.ItemContentPadding,
-                        )
-                    }
-                }
             }
 
             Spacer(modifier = Modifier.height(32.dp))
