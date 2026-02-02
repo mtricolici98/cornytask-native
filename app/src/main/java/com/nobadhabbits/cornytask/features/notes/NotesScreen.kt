@@ -83,7 +83,7 @@ fun NotesScreen(
                 NoteGridItem(
                     note = note, 
                     onClick = {
-                        navController.navigate("edit_note/${note.id}")
+                        navController.navigate("More/edit_note/${note.id}")
                     },
                     onLongClick = {
                         noteToDelete = note

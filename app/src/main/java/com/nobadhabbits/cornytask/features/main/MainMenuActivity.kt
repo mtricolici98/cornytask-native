@@ -191,7 +191,7 @@ fun MainScreen(onSignOut: () -> Unit, userViewModel: UserViewModel = viewModel()
     }
 
     val showBottomBar = when (currentDestination?.route) {
-        "edit_note", "edit_note/{noteId}" -> false
+        "More/edit_note", "More/edit_note/{noteId}" -> false
         else -> true
     }
     Scaffold(
@@ -249,8 +249,9 @@ fun MainScreen(onSignOut: () -> Unit, userViewModel: UserViewModel = viewModel()
             }
         },
         bottomBar = {
-            if (showBottomBar) {
 
+            val currentRoute = currentDestination?.route
+            if (showBottomBar) {
             NavigationBar {
                 val items = listOf(
                     Screen.Todo,
@@ -259,18 +260,23 @@ fun MainScreen(onSignOut: () -> Unit, userViewModel: UserViewModel = viewModel()
                     Screen.More
                 )
                 items.forEach { screen ->
+                    val selected = when (screen) {
+                        Screen.More -> currentRoute?.startsWith("More/") == true
+                        Screen.TimeGoals -> currentRoute == Routes.TIMEGOALS_MAIN || currentRoute == "timer_screen"
+                        else -> currentRoute == screen.route
+                    }
                     NavigationBarItem(
                         icon = { Icon(screen.icon, contentDescription = null) },
-                        label = { Text(screen.route) },
-                        selected = currentDestination?.hierarchy?.any { it.route == screen.route } == true,
+                        label = { Text(screen.label) },
+                        selected = selected,
                         onClick = {
-                            navController.navigate(screen.route) {
-                                popUpTo(navController.graph.findStartDestination().id) {
-                                    saveState = true
+                                navController.navigate(screen.route) {
+                                    popUpTo(navController.graph.findStartDestination().id) {
+                                        saveState = true
+                                    }
+                                    launchSingleTop = true
+                                    restoreState = true
                                 }
-                                launchSingleTop = true
-                                restoreState = true
-                            }
                         },
                         colors = NavigationBarItemDefaults.colors(
                             selectedIconColor = DeepPink,
@@ -292,17 +298,18 @@ fun MainScreen(onSignOut: () -> Unit, userViewModel: UserViewModel = viewModel()
         ) {
             composable(Screen.Todo.route) { TodoScreen(onTabSelected = { showFab = it }) }
             composable(Screen.Rewards.route) { RewardsScreen() }
-            navigation(startDestination = "TimeGoalsMain", route = Screen.TimeGoals.route) {
-                composable("TimeGoalsMain") { TimeGoalsScreen(navController = navController) }
+
+            navigation(startDestination = Routes.TIMEGOALS_MAIN, route = Routes.TIMEGOALS_GRAPH) {
+                composable(Routes.TIMEGOALS_MAIN) { TimeGoalsScreen(navController = navController) }
                 composable("timer_screen") { TimerScreen(navController = navController) }
             }
 
-            navigation(startDestination = "more_main", route = Screen.More.route) {
-                composable("more_main") { MoreScreen(navController = navController) }
+            navigation(startDestination = Routes.MORE_MAIN, route = Routes.MORE_GRAPH) {
+                composable(Routes.MORE_MAIN) { MoreScreen(navController = navController) }
                 composable(MoreScreenItems.History.route) { HistoryScreen() }
                 composable(MoreScreenItems.Notes.route) { NotesScreen(navController = navController) }
                 composable(
-                    "edit_note/{noteId}",
+                    "More/edit_note/{noteId}",
                     arguments = listOf(navArgument("noteId") { type = NavType.StringType })
                 ) { backStackEntry ->
                     EditNoteScreen(
