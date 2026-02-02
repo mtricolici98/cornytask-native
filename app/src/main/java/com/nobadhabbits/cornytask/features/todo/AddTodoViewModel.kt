@@ -18,7 +18,7 @@ import java.util.Date
 
 class AddTodoViewModel(application: Application) : AndroidViewModel(application) {
 
-    private val repository = TodoRepository()
+    private val repository = TodoRepository(application)
 
     var title by mutableStateOf("")
     var description by mutableStateOf("")

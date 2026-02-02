@@ -15,7 +15,7 @@ import kotlinx.coroutines.launch
 
 class TodoViewModel(private val context: Context) : ViewModel() {
 
-    private val todoRepository = TodoRepository()
+    private val todoRepository = TodoRepository(context)
     private val userRepository = UserRepository()
 
     val todos: StateFlow<List<Todo>> = todoRepository.getTodosFlow()

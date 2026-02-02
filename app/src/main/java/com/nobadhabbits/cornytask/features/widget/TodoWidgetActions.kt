@@ -28,7 +28,7 @@ class CompleteTodoAction : ActionCallback {
         val todoId = parameters[todoIdKey] ?: return
         val isCompleted = parameters[isCompletedKey] ?: return
 
-        val todoRepository = TodoRepository()
+        val todoRepository = TodoRepository(context)
         val userRepository = UserRepository()
 
         // Use the one-shot fetch function to get the specific todo

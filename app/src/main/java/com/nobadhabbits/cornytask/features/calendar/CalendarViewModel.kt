@@ -15,7 +15,7 @@ import java.time.ZoneId
 
 class CalendarViewModel(application: Application) : AndroidViewModel(application) {
 
-    private val todoRepository = TodoRepository()
+    private val todoRepository = TodoRepository(application)
     private val _selectedDate = MutableStateFlow(LocalDate.now())
     val selectedDate: StateFlow<LocalDate> = _selectedDate
 

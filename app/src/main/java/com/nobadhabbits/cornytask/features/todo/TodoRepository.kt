@@ -1,21 +1,24 @@
 package com.nobadhabbits.cornytask.features.todo
 
+import android.content.Context
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.ListenerRegistration
 import com.google.firebase.firestore.Query
 import com.nobadhabbits.cornytask.data.History
 import com.nobadhabbits.cornytask.data.Todo
+import com.nobadhabbits.cornytask.features.widget.NotificationScheduler
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.tasks.await
 import java.util.Date
 
-class TodoRepository {
+class TodoRepository(context: Context) {
 
     private val firestore = FirebaseFirestore.getInstance()
     private val auth = FirebaseAuth.getInstance()
+    private val notificationScheduler = NotificationScheduler(context)
 
     fun getTodosFlow(): Flow<List<Todo>> = callbackFlow {
         var snapshotListener: ListenerRegistration? = null
@@ -71,7 +74,14 @@ class TodoRepository {
         val uid = auth.currentUser?.uid ?: return
         val keywords = title.lowercase().split(" ").filter { it.isNotBlank() }
         val todo = Todo(title = title, description = description, rewardCoins = rewardCoins, keywords = keywords, dueDate = dueDate)
-        firestore.collection("users").document(uid).collection("todos").add(todo)
+        firestore.collection("users").document(uid).collection("todos").add(todo).addOnSuccessListener {
+            it.get().addOnSuccessListener { documentSnapshot ->
+                val createdTodo = documentSnapshot.toObject(Todo::class.java)?.copy(id = documentSnapshot.id)
+                createdTodo?.let { todoWithId ->
+                    notificationScheduler.scheduleNotifications(todoWithId)
+                }
+            }
+        }
     }
 
     suspend fun upsertCalendarEvent(event: Todo) {
@@ -83,6 +93,7 @@ class TodoRepository {
         } else {
             collection.document(event.id).set(event)
         }
+        notificationScheduler.scheduleNotifications(event)
     }
 
     suspend fun getSuggestions(query: String): List<Todo> {
@@ -109,12 +120,14 @@ class TodoRepository {
                 )
                 batch.set(newHistoryRef, history)
                 batch.update(todoDoc, "isCompleted", true, "historyId", newHistoryRef.id)
+                notificationScheduler.cancelNotifications(todo)
             } else {
                 todo.historyId?.let {
                     val historyDoc = historyCollection.document(it)
                     batch.delete(historyDoc)
                 }
                 batch.update(todoDoc, "isCompleted", false, "historyId", null)
+                notificationScheduler.scheduleNotifications(todo)
             }
         }
     }
@@ -122,6 +135,7 @@ class TodoRepository {
     fun deleteTodo(todo: Todo) {
         val uid = auth.currentUser?.uid ?: return
         firestore.collection("users").document(uid).collection("todos").document(todo.id).delete()
+        notificationScheduler.cancelNotifications(todo)
     }
 
     suspend fun getTodo(todoId: String): Todo? {
@@ -142,6 +156,15 @@ class TodoRepository {
             "keywords" to keywords,
             "dueDate" to dueDate
         )
-        firestore.collection("users").document(uid).collection("todos").document(todoId).update(todoUpdate)
+        val docRef = firestore.collection("users").document(uid).collection("todos").document(todoId)
+        docRef.update(todoUpdate).addOnSuccessListener {
+            docRef.get().addOnSuccessListener { documentSnapshot ->
+                val updatedTodo = documentSnapshot.toObject(Todo::class.java)?.copy(id = documentSnapshot.id)
+                updatedTodo?.let { todoWithId ->
+                    notificationScheduler.cancelNotifications(todoWithId)
+                    notificationScheduler.scheduleNotifications(todoWithId)
+                }
+            }
+        }
     }
 }

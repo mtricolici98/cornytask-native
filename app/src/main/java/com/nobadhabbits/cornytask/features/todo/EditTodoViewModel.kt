@@ -14,7 +14,7 @@ import java.util.Date
 
 class EditTodoViewModel(application: Application) : AndroidViewModel(application) {
 
-    private val repository = TodoRepository()
+    private val repository = TodoRepository(application)
 
     private var todoId: String? = null
     var title by mutableStateOf("")

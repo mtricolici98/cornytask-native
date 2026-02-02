@@ -8,6 +8,9 @@
     <uses-permission android:name="android.permission.USE_CREDENTIALS" />
     <uses-permission android:name="android.permission.GET_ACCOUNTS" />
     <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+    <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
+    <uses-permission android:name="android.permission.USE_EXACT_ALARM" />
 
     <application
         android:allowBackup="true"
@@ -15,9 +18,16 @@
         android:fullBackupContent="@xml/backup_rules"
         android:icon="@drawable/unicorn_logo"
         android:label="@string/app_name"
-        android:roundIcon="@drawable/unicorn_logo"
+        android.roundIcon="@drawable/unicorn_logo"
         android:supportsRtl="true"
         android:theme="@style/Theme.Cornytaskv2">
+
+        <receiver android:name=".features.widget.TodoNotificationReceiver" android:exported="false"/>
+        <receiver android:name=".features.widget.BootCompletedReceiver" android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+            </intent-filter>
+        </receiver>
 
         <service
             android:name=".features.time_goals.TimeGoalService"

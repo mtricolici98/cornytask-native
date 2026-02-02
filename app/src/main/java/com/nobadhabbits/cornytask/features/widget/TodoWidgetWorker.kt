@@ -16,7 +16,7 @@ import java.util.Locale
 class TodoWidgetWorker(private val context: Context, params: WorkerParameters) : CoroutineWorker(context, params) {
 
     override suspend fun doWork(): Result {
-        // Safely initialize Firebase only if it hasn'''t been initialized in this process yet.
+        // Safely initialize Firebase only if it hasn't been initialized in this process yet.
         if (FirebaseApp.getApps(context).isEmpty()) {
             FirebaseApp.initializeApp(context)
         }
@@ -25,7 +25,7 @@ class TodoWidgetWorker(private val context: Context, params: WorkerParameters) :
         val glanceIds = manager.getGlanceIds(TodoWidget::class.java)
 
         return try {
-            val todoRepository = TodoRepository()
+            val todoRepository = TodoRepository(context)
             val userRepository = UserRepository()
 
             val todos = todoRepository.fetchAllTodos()
