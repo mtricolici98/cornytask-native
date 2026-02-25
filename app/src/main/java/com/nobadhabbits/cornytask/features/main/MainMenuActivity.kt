@@ -71,10 +71,16 @@ import androidx.navigation.navigation
 import com.google.android.gms.auth.api.signin.GoogleSignIn
 import com.google.android.gms.auth.api.signin.GoogleSignInClient
 import com.google.android.gms.auth.api.signin.GoogleSignInOptions
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.FirebaseFirestore
 import com.nobadhabbits.cornytask.R
 import com.nobadhabbits.cornytask.features.history.HistoryScreen
 import com.nobadhabbits.cornytask.features.login.LoginActivity
 import com.nobadhabbits.cornytask.features.main.MoreScreen as MoreScreenItems
+import com.nobadhabbits.cornytask.features.mood_tracking.AddMoodScreen
+import com.nobadhabbits.cornytask.features.mood_tracking.MoodScreen
+import com.nobadhabbits.cornytask.features.mood_tracking.MoodTrackingRepository
+import com.nobadhabbits.cornytask.features.mood_tracking.MoodViewModel
 import com.nobadhabbits.cornytask.features.more.MoreScreen
 import com.nobadhabbits.cornytask.features.notes.EditNoteScreen
 import com.nobadhabbits.cornytask.features.notes.NotesScreen
@@ -178,6 +184,10 @@ fun MainScreen(onSignOut: () -> Unit, userViewModel: UserViewModel = viewModel()
     val scope = rememberCoroutineScope()
     var showFab by remember { mutableStateOf(true) }
 
+    val moodViewModel: MoodViewModel = viewModel(
+        factory = MoodViewModelFactory(MoodTrackingRepository(FirebaseFirestore.getInstance(), FirebaseAuth.getInstance()))
+    )
+
     (context as? MainMenuActivity)?.intent?.getStringExtra("timeGoalId")?.let {
         LaunchedEffect(it) {
             navController.navigate(Screen.TimeGoals.route) {
@@ -246,6 +256,10 @@ fun MainScreen(onSignOut: () -> Unit, userViewModel: UserViewModel = viewModel()
                 FloatingActionButton(onClick = { context.startActivity(Intent(context, AddTodoActivity::class.java)) }) {
                     Icon(Icons.Default.Add, contentDescription = "Add a new TODO")
                 }
+            } else if (currentDestination?.route == MoreScreenItems.Mood.route) {
+                FloatingActionButton(onClick = { navController.navigate("add_mood") }) {
+                    Icon(Icons.Default.Add, contentDescription = "Add a new mood record")
+                }
             }
         },
         bottomBar = {
@@ -304,9 +318,23 @@ fun MainScreen(onSignOut: () -> Unit, userViewModel: UserViewModel = viewModel()
                 composable("timer_screen") { TimerScreen(navController = navController) }
             }
 
+
             navigation(startDestination = Routes.MORE_MAIN, route = Routes.MORE_GRAPH) {
                 composable(Routes.MORE_MAIN) { MoreScreen(navController = navController) }
                 composable(MoreScreenItems.History.route) { HistoryScreen() }
+                composable(MoreScreenItems.Mood.route) {
+                    val moodRecords by moodViewModel.moodRecords.collectAsState()
+                    LaunchedEffect(Unit) {
+                        moodViewModel.fetchMoodRecords()
+                    }
+                    MoodScreen(moodRecords = moodRecords)
+                }
+                composable("add_mood") {
+                    AddMoodScreen(onAddMood = { date, timeOfDay, moodScore ->
+                        moodViewModel.addMoodRecord(date, timeOfDay, moodScore)
+                        navController.popBackStack()
+                    })
+                }
                 composable(MoreScreenItems.Notes.route) { NotesScreen(navController = navController) }
                 composable(
                     "More/edit_note/{noteId}",
@@ -350,5 +378,15 @@ fun CoinPill(coins: Int, onClick: () -> Unit) {
                 modifier = Modifier.size(24.dp)
             )
         }
+    }
+}
+
+class MoodViewModelFactory(private val repository: MoodTrackingRepository) : androidx.lifecycle.ViewModelProvider.Factory {
+    override fun <T : androidx.lifecycle.ViewModel> create(modelClass: Class<T>): T {
+        if (modelClass.isAssignableFrom(MoodViewModel::class.java)) {
+            @Suppress("UNCHECKED_CAST")
+            return MoodViewModel(repository) as T
+        }
+        throw IllegalArgumentException("Unknown ViewModel class")
     }
 }

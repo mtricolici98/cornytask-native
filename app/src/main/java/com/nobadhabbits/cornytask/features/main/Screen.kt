@@ -9,6 +9,7 @@ import androidx.compose.material.icons.filled.Note
 import androidx.compose.material.icons.filled.Timelapse
 import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.Face
 import androidx.compose.ui.graphics.vector.ImageVector
 
 object Routes {
@@ -31,5 +32,7 @@ sealed class Screen(
 sealed class MoreScreen(val route: String, val title: String, val icon: ImageVector) {
     object History : MoreScreen("More/history", "History", Icons.Default.Check)
     object Notes : MoreScreen("More/notes", "Notes", Icons.Filled.Note)
+
+    object Mood : MoreScreen("More/mood", "Mood", Icons.Default.Face)
     object Settings : MoreScreen("More/settings", "Settings", Icons.Default.Settings)
 }

@@ -15,8 +15,8 @@ android {
         applicationId = "com.nobadhabbits.cornytask"
         minSdk = 26
         targetSdk = 36
-        versionCode = 11
-        versionName = "1.10"
+        versionCode = 12
+        versionName = "1.11"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -85,6 +85,8 @@ dependencies {
     implementation("com.mohamedrejeb.richeditor:richeditor-compose:1.0.0-rc13")
     implementation(libs.androidx.foundation)
 
+    // Chart
+    implementation("io.github.dautovicharis:charts:2.2.0")
 
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)

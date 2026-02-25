@@ -18,7 +18,8 @@ fun MoreScreen(navController: NavController) {
     val items = listOf(
         MoreScreenItems.History,
         MoreScreenItems.Notes,
-        MoreScreenItems.Settings
+        MoreScreenItems.Mood,
+        MoreScreenItems.Settings,
     )
 
     Column(

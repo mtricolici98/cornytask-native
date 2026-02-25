@@ -1,20 +1,25 @@
 <?xml version="1.0" encoding="utf-8"?>
 <shortcuts xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto">
+
     <capability
-        android:name="custom.actions.intent.CREATE_CORNY_TASK"
+        android:name="actions.intent.GET_THING"
         app:queryPatterns="@array/create_corny_task_queries">
+
         <intent
             android:action="android.intent.action.VIEW"
+            android:targetPackage="com.nobadhabbits.cornytask"
             android:targetClass="com.nobadhabbits.cornytask.features.todo.CreateTodoFromAssistantActivity">
+
+            <category android:name="android.intent.category.DEFAULT" />
+            <category android:name="android.intent.category.BROWSABLE" />
+
+            <url-template android:value="app://cornytask/createTodo{?query}" />
+
             <parameter
-                android:name="action"
-                android:key="action"
-                android:required="true"/>
-            <parameter
-                android:name="coins"
-                android:key="coins"
-                android:required="true"/>
+                android:name="query"
+                android:key="query" />
         </intent>
+
     </capability>
 </shortcuts>

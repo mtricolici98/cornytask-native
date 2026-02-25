@@ -44,13 +44,13 @@ class NotesRepository {
     suspend fun saveNote(note: Note) {
         val collection = notesCollection() ?: return
         if (note.id.isBlank()) {
-            collection.add(note).await()
+            collection.add(note)
         } else {
-            collection.document(note.id).set(note).await()
+            collection.document(note.id).set(note)
         }
     }
 
     suspend fun deleteNote(noteId: String) {
-        notesCollection()?.document(noteId)?.delete()?.await()
+        notesCollection()?.document(noteId)?.delete()
     }
 }

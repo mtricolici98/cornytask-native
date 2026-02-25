@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string-array name="create_corny_task_queries">
+        <item>create a task in cornytask</item>
+        <item>create a task in corny task</item>
+        <item>create a task in corny task to $thing for $number coins</item>
+        <item>add a task in corny task to $thing for $number coins</item>
+        <item>make a task in corny task to $thing for $number coins</item>
+    </string-array>
+
+</resources>

@@ -65,16 +65,21 @@
             android:exported="true"
             android:label="Main Menu"
             android:theme="@style/Theme.Cornytaskv2" >
-            <meta-data
-                android:name="android.app.shortcuts"
-                android:resource="@xml/shortcuts" />
         </activity>
 
         <activity
             android:name=".features.todo.CreateTodoFromAssistantActivity"
             android:exported="true"
             android:label="Create todo"
-            android:theme="@style/Theme.Cornytaskv2" />
+            android:theme="@style/Theme.Cornytaskv2">
+
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="app" android:host="cornytask" android:path="/createTodo" />
+            </intent-filter>
+        </activity>
 
         <activity
             android:name=".features.todo.AddTodoActivity"
@@ -102,6 +107,10 @@
 
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
+
+            <meta-data
+                android:name="android.app.shortcuts"
+                android:resource="@xml/shortcuts" />
         </activity>
     </application>
 
