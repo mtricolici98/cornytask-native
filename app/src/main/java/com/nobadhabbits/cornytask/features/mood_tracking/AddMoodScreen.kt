@@ -14,20 +14,18 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import com.nobadhabbits.cornytask.features.mood_tracking.data.TimeOfDay
 import java.util.Date
 
 @Composable
 fun AddMoodScreen(
-    onAddMood: (Date, TimeOfDay, Int) -> Unit
+    onAddMood: (Date, Int) -> Unit
 ) {
-    var selectedTimeOfDay by remember { mutableStateOf(TimeOfDay.Morning) }
     var moodScore by remember { mutableStateOf(0) }
 
     Scaffold(
         floatingActionButton = {
             FloatingActionButton(
-                onClick = { onAddMood(Date(), selectedTimeOfDay, moodScore) }
+                onClick = { onAddMood(Date(), moodScore) }
             ) {
                 Icon(Icons.Filled.Check, contentDescription = "Add Mood")
             }
@@ -39,29 +37,17 @@ fun AddMoodScreen(
                 .padding(padding)
                 .padding(12.dp)
                 .verticalScroll(rememberScrollState()),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
+            Text(
+                text = "Add mood",
+                style = MaterialTheme.typography.headlineSmall
+            )
+
             ElevatedCard(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(20.dp)
             ) {
-                Column(
-                    modifier = Modifier.padding(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    Text("Time of day", style = MaterialTheme.typography.titleMedium)
-
-                    SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
-                        val items = TimeOfDay.values()
-                        items.forEachIndexed { index, tod ->
-                            SegmentedButton(
-                                selected = selectedTimeOfDay == tod,
-                                onClick = { selectedTimeOfDay = tod },
-                                shape = SegmentedButtonDefaults.itemShape(index = index, count = items.size)
-                            ) { Text(tod.name) }
-                        }
-                    }
-                }
-
                 Column(
                     modifier = Modifier.padding(16.dp),
                     verticalArrangement = Arrangement.spacedBy(10.dp)
@@ -78,7 +64,6 @@ fun AddMoodScreen(
                         )
                     }
 
-                    // More compact and less “tall”
                     MoodBarSelectorCompact(
                         moodScore = moodScore,
                         onMoodScoreChange = { moodScore = it },
@@ -91,8 +76,6 @@ fun AddMoodScreen(
                     )
                 }
             }
-
-            Spacer(Modifier.height(8.dp))
 
             Text(
                 text = "If you ever feel unsafe or overwhelmed, please reach out to a trusted adult or local emergency help.",
@@ -129,12 +112,10 @@ fun MoodBarSelectorCompact(
     val selectedContent = MaterialTheme.colorScheme.onPrimaryContainer
     val unselectedContent = MaterialTheme.colorScheme.onSurfaceVariant
 
-    // Fixed compact row height per item -> never truncates
     Column(
         modifier = modifier.clip(RoundedCornerShape(18.dp)),
         verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-        // top = 3 down to -3
         levels.asReversed().forEach { level ->
             val selected = moodScore == level.score
 
@@ -144,7 +125,7 @@ fun MoodBarSelectorCompact(
                 tonalElevation = if (selected) 2.dp else 0.dp,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .heightIn(min = 44.dp) // compact height
+                    .heightIn(min = 44.dp)
                     .clickable { onMoodScoreChange(level.score) }
             ) {
                 Row(

@@ -20,11 +20,10 @@ class MoodTrackingRepository(
         firestore.collection("users").document(it).collection("moods")
     }
 
-    suspend fun addMoodRecord(date: Date, timeOfDay: TimeOfDay, moodScore: Int) {
+    suspend fun addMoodRecord(date: Date, moodScore: Int) {
         val userId = auth.currentUser?.uid ?: return
         val moodRecord = MoodRecord(
             timestamp = date,
-            timeOfDay = timeOfDay,
             moodScore = moodScore,
             userId = userId
         )

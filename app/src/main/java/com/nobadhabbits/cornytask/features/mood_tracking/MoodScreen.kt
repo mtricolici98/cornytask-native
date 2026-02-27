@@ -16,18 +16,18 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.nobadhabbits.cornytask.features.mood_tracking.data.MoodRecord
-import com.nobadhabbits.cornytask.features.mood_tracking.data.TimeOfDay
 import io.github.dautovicharis.charts.LineChart
 import io.github.dautovicharis.charts.model.toChartDataSet
 import java.text.SimpleDateFormat
 import java.time.DayOfWeek
 import java.time.LocalDate
 import java.time.ZoneId
+import java.time.ZonedDateTime
 import java.time.format.TextStyle
-import java.util.Date
 import java.util.Locale
 
 private enum class MoodRangeMode { WEEK, MONTH, LIST }
+private enum class DaySlot(val shortLabel: String) { AM("AM"), PM("PM"), EVE("Eve") }
 
 @Composable
 fun MoodScreen(
@@ -66,14 +66,14 @@ fun MoodScreen(
                 anchorDate = when (mode) {
                     MoodRangeMode.WEEK -> anchorDate.minusWeeks(1)
                     MoodRangeMode.MONTH -> anchorDate.minusMonths(1)
-                    MoodRangeMode.LIST -> anchorDate // no-op
+                    MoodRangeMode.LIST -> anchorDate
                 }
             },
             onNext = {
                 anchorDate = when (mode) {
                     MoodRangeMode.WEEK -> anchorDate.plusWeeks(1)
                     MoodRangeMode.MONTH -> anchorDate.plusMonths(1)
-                    MoodRangeMode.LIST -> anchorDate // no-op
+                    MoodRangeMode.LIST -> anchorDate
                 }
             }
         )
@@ -81,27 +81,40 @@ fun MoodScreen(
         Spacer(Modifier.height(12.dp))
 
         when (mode) {
-            MoodRangeMode.WEEK, MoodRangeMode.MONTH -> {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .padding(2.dp)
-                    ) {
-                        MoodChart(
-                            moodRecords = moodRecords,
-                            mode = mode,
-                            anchorDate = anchorDate,
-                            zoneId = zoneId,
-                            weekStartsOn = weekStartsOn
-                        )
-                    }
+            MoodRangeMode.WEEK -> {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(2.dp)
+                ) {
+                    WeekMoodProgressionChart(
+                        moodRecords = moodRecords,
+                        anchorDate = anchorDate,
+                        zoneId = zoneId,
+                        weekStartsOn = weekStartsOn
+                    )
+                }
+            }
+
+            MoodRangeMode.MONTH -> {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(2.dp)
+                ) {
+                    MonthMoodChart(
+                        moodRecords = moodRecords,
+                        anchorDate = anchorDate,
+                        zoneId = zoneId
+                    )
+                }
             }
 
             MoodRangeMode.LIST -> {
-                    MoodList(
-                        moodRecords = sortedRecords,
-                        modifier = Modifier.fillMaxSize()
-                    )
+                MoodList(
+                    moodRecords = sortedRecords,
+                    modifier = Modifier.fillMaxSize()
+                )
             }
         }
 
@@ -123,7 +136,6 @@ private fun MoodRangeHeader(
         modifier = Modifier.fillMaxWidth(),
         verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-        // Row 1: mode toggle
         SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
             SegmentedButton(
                 selected = mode == MoodRangeMode.WEEK,
@@ -144,7 +156,6 @@ private fun MoodRangeHeader(
             ) { Text("List") }
         }
 
-        // Row 2: navigation (hide arrows in LIST)
         if (mode != MoodRangeMode.LIST) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -175,57 +186,155 @@ private fun MoodRangeHeader(
     }
 }
 
+/**
+ * WEEK progression:
+ * 7 days × 3 slots inferred from timestamp:
+ * - AM: 05:00–11:59
+ * - PM: 12:00–17:59
+ * - Eve: 18:00–04:59 (wrap)
+ *
+ * Each slot = average moodScore of all records in that slot.
+ *
+ * IMPORTANT: 0 is a valid mood score, so we use hasData instead of checking all values == 0f.
+ */
 @Composable
-private fun MoodChart(
+private fun WeekMoodProgressionChart(
     moodRecords: List<MoodRecord>,
-    mode: MoodRangeMode,
     anchorDate: LocalDate,
     zoneId: ZoneId,
     weekStartsOn: DayOfWeek
 ) {
-    when (mode) {
-        MoodRangeMode.WEEK -> {
-            val week = remember(moodRecords, anchorDate, zoneId, weekStartsOn) {
-                buildWeekChartWithTimeSlots(moodRecords, anchorDate, zoneId, weekStartsOn)
-            }
+    val model = remember(moodRecords, anchorDate, zoneId, weekStartsOn) {
+        buildWeekProgressionBySlots(moodRecords, anchorDate, zoneId, weekStartsOn)
+    }
 
-            if (week.values.all { it == 0f }) {
-                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    Text("No mood data for this week")
-                }
-                return
-            }
-
-            val dataSet = week.values.toChartDataSet(
-                title = week.title,
-                labels = week.labels
-            )
-
-            LineChart(dataSet = dataSet)
+    if (!model.hasData) {
+        Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+            Text("No mood data for this week")
         }
+        return
+    }
 
-        MoodRangeMode.MONTH -> {
-            val month = remember(moodRecords, anchorDate, zoneId) {
-                buildMonthChart(moodRecords, anchorDate, zoneId)
-            }
+    val dataSet = model.values.toChartDataSet(
+        title = model.title,
+        labels = model.labels
+    )
 
-            if (month.values.all { it == null }) {
-                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    Text("No mood data for this month")
-                }
-                return
-            }
+    LineChart(dataSet = dataSet)
+}
 
-            val values = month.values.map { (it ?: 0.0).toFloat() }
-            val dataSet = values.toChartDataSet(
-                title = month.title,
-                labels = month.labels
-            )
+/**
+ * Month = daily averages.
+ * IMPORTANT: 0 is valid, so we use hasData.
+ */
+@Composable
+private fun MonthMoodChart(
+    moodRecords: List<MoodRecord>,
+    anchorDate: LocalDate,
+    zoneId: ZoneId
+) {
+    val model = remember(moodRecords, anchorDate, zoneId) {
+        buildMonthDailyChart(moodRecords, anchorDate, zoneId)
+    }
 
-            LineChart(dataSet = dataSet)
+    if (!model.hasData) {
+        Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+            Text("No mood data for this month")
         }
+        return
+    }
 
-        MoodRangeMode.LIST -> Unit
+    val dataSet = model.values.toChartDataSet(
+        title = model.title,
+        labels = model.labels
+    )
+
+    LineChart(dataSet = dataSet)
+}
+
+private data class FloatChartModel(
+    val title: String,
+    val labels: List<String>,
+    val values: List<Float>,
+    val hasData: Boolean
+)
+
+private fun buildWeekProgressionBySlots(
+    moodRecords: List<MoodRecord>,
+    anchorDate: LocalDate,
+    zoneId: ZoneId,
+    weekStartsOn: DayOfWeek
+): FloatChartModel {
+    val weekStart = startOfWeek(anchorDate, weekStartsOn)
+    val days = (0..6).map { weekStart.plusDays(it.toLong()) }
+    val weekEnd = weekStart.plusDays(6)
+
+    val inWeek: List<Pair<ZonedDateTime, Int>> = moodRecords.mapNotNull { record ->
+        val zdt = record.timestamp.toInstant().atZone(zoneId)
+        val d = zdt.toLocalDate()
+        if (d.isBefore(weekStart) || d.isAfter(weekEnd)) null else zdt to record.moodScore
+    }
+
+    val grouped = inWeek
+        .groupBy(
+            keySelector = { (zdt, _) -> zdt.toLocalDate() to slotFromHour(zdt.hour) },
+            valueTransform = { it.second }
+        )
+        .mapValues { (_, scores) -> scores.average().toFloat() }
+
+    val labels = mutableListOf<String>()
+    val values = mutableListOf<Float>()
+
+    days.forEach { day ->
+        val dayLabel = day.dayOfWeek.getDisplayName(TextStyle.SHORT, Locale.getDefault())
+        DaySlot.values().forEach { slot ->
+            labels += "$dayLabel ${slot.shortLabel}"
+            values += grouped[day to slot] ?: 0f
+        }
+    }
+
+    return FloatChartModel(
+        title = "Mood progression",
+        labels = labels,
+        values = values,
+        hasData = inWeek.isNotEmpty()
+    )
+}
+
+private fun buildMonthDailyChart(
+    moodRecords: List<MoodRecord>,
+    anchorDate: LocalDate,
+    zoneId: ZoneId
+): FloatChartModel {
+    val monthStart = anchorDate.withDayOfMonth(1)
+    val monthEnd = anchorDate.withDayOfMonth(anchorDate.lengthOfMonth())
+
+    val inMonth = moodRecords.asSequence().mapNotNull { record ->
+        val date = record.timestamp.toInstant().atZone(zoneId).toLocalDate()
+        if (date.isBefore(monthStart) || date.isAfter(monthEnd)) null else date to record.moodScore
+    }.toList()
+
+    val byDay: Map<Int, Float> =
+        inMonth.groupBy({ (date, _) -> date.dayOfMonth }, { it.second })
+            .mapValues { (_, scores) -> scores.average().toFloat() }
+
+    val daysInMonth = anchorDate.lengthOfMonth()
+    val labels = (1..daysInMonth).map { it.toString() }
+    val values = (1..daysInMonth).map { d -> byDay[d] ?: 0f }
+
+    return FloatChartModel(
+        title = "Mood (daily average)",
+        labels = labels,
+        values = values,
+        hasData = inMonth.isNotEmpty()
+    )
+}
+
+private fun slotFromHour(hour: Int): DaySlot {
+    return when (hour) {
+        in 5..11 -> DaySlot.AM
+        in 12..17 -> DaySlot.PM
+        else -> DaySlot.EVE
     }
 }
 
@@ -295,7 +404,7 @@ private fun MoodRecordRow(
                     overflow = TextOverflow.Ellipsis
                 )
                 Text(
-                    text = "${dateFormat.format(record.timestamp)} • ${record.timeOfDay.name}",
+                    text = dateFormat.format(record.timestamp),
                     style = MaterialTheme.typography.bodySmall
                 )
             }
@@ -306,98 +415,6 @@ private fun MoodRecordRow(
             )
         }
     }
-}
-
-private data class WeekSlotChartModel(
-    val title: String,
-    val labels: List<String>, // e.g. "Mon AM", "Mon PM", ...
-    val values: List<Float>   // same size as labels
-)
-
-/**
- * Weekly chart with time-of-day points:
- * Categories = 7 days * N timeOfDay slots.
- * Each slot shows the average for that (day, timeOfDay) if multiple records exist.
- * Missing slots are 0f.
- */
-private fun buildWeekChartWithTimeSlots(
-    moodRecords: List<MoodRecord>,
-    anchorDate: LocalDate,
-    zoneId: ZoneId,
-    weekStartsOn: DayOfWeek
-): WeekSlotChartModel {
-    val weekStart = startOfWeek(anchorDate, weekStartsOn)
-    val days = (0..6).map { weekStart.plusDays(it.toLong()) }
-    val slots = TimeOfDay.values().toList()
-
-    val grouped = moodRecords
-        .asSequence()
-        .map { record ->
-            val date = record.timestamp.toInstant().atZone(zoneId).toLocalDate()
-            Triple(date, record.timeOfDay, record.moodScore)
-        }
-        .filter { (date, _, _) -> !date.isBefore(weekStart) && !date.isAfter(weekStart.plusDays(6)) }
-        .groupBy({ it.first to it.second }, { it.third })
-
-    val labels = mutableListOf<String>()
-    val values = mutableListOf<Float>()
-
-    days.forEach { day ->
-        val dayLabel = day.dayOfWeek.getDisplayName(TextStyle.SHORT, Locale.getDefault())
-
-        slots.forEach { tod ->
-            val todLabel = shortTimeOfDayLabel(tod)
-            labels += "$dayLabel $todLabel"
-
-            val scores = grouped[day to tod].orEmpty()
-            values += if (scores.isEmpty()) 0f else scores.average().toFloat()
-        }
-    }
-
-    return WeekSlotChartModel(
-        title = "Mood (by time of day)",
-        labels = labels,
-        values = values
-    )
-}
-
-private data class ChartModel(
-    val title: String,
-    val labels: List<String>,
-    val values: List<Double?> // null = no data that day
-)
-
-private fun buildMonthChart(
-    moodRecords: List<MoodRecord>,
-    anchorDate: LocalDate,
-    zoneId: ZoneId
-): ChartModel {
-    val monthStart = anchorDate.withDayOfMonth(1)
-    val monthEnd = anchorDate.withDayOfMonth(anchorDate.lengthOfMonth())
-    val days = generateSequence(monthStart) { d ->
-        val next = d.plusDays(1)
-        if (next.isAfter(monthEnd)) null else next
-    }.toList()
-
-    val avgByDay = moodRecords
-        .asSequence()
-        .map { it.toLocalDate(zoneId) to it.moodScore }
-        .filter { (date, _) -> !date.isBefore(monthStart) && !date.isAfter(monthEnd) }
-        .groupBy({ it.first }, { it.second })
-        .mapValues { (_, scores) -> scores.average() }
-
-    val labels = days.map { it.dayOfMonth.toString() }
-    val values = days.map { day -> avgByDay[day] }
-
-    return ChartModel(
-        title = "Daily Mood Average",
-        labels = labels,
-        values = values
-    )
-}
-
-private fun MoodRecord.toLocalDate(zoneId: ZoneId): LocalDate {
-    return timestamp.toInstant().atZone(zoneId).toLocalDate()
 }
 
 private fun startOfWeek(date: LocalDate, weekStartsOn: DayOfWeek): LocalDate {
@@ -417,16 +434,6 @@ private fun formatWeekTitle(anchorDate: LocalDate, weekStartsOn: DayOfWeek): Str
 private fun formatMonthTitle(anchorDate: LocalDate): String {
     val month = anchorDate.month.getDisplayName(TextStyle.FULL, Locale.getDefault())
     return "$month ${anchorDate.year}"
-}
-
-private fun shortTimeOfDayLabel(tod: TimeOfDay): String {
-    return when (tod.name.lowercase(Locale.getDefault())) {
-        "morning" -> "AM"
-        "afternoon" -> "PM"
-        "evening" -> "Eve"
-        "night" -> "N"
-        else -> tod.name.take(3)
-    }
 }
 
 private fun moodEmoji(score: Int): String = when {
@@ -452,9 +459,9 @@ private fun moodLabel(score: Int): String = when {
 @Composable
 private fun MoodLegendHint(mode: MoodRangeMode) {
     val text = when (mode) {
-        MoodRangeMode.WEEK -> "Shows mood points per day and time of day."
-        MoodRangeMode.MONTH -> "Shows the average mood score for each day of the month."
-        MoodRangeMode.LIST -> "Shows all mood entries in reverse chronological order."
+        MoodRangeMode.WEEK -> "Week view shows AM/PM/Eve mood progression (inferred from timestamps)."
+        MoodRangeMode.MONTH -> "Month view shows daily averages."
+        MoodRangeMode.LIST -> "List view shows all mood entries."
     }
     Text(text, style = MaterialTheme.typography.bodySmall)
 }

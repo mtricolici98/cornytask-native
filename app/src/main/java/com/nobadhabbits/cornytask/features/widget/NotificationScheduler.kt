@@ -11,6 +11,10 @@ class NotificationScheduler(private val context: Context) {
 
     private val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
 
+    /* =========================
+       TODO REMINDERS (Existing)
+       ========================= */
+
     fun scheduleNotifications(todo: Todo) {
         val dueDate = todo.dueDate ?: return
 
@@ -39,12 +43,14 @@ class NotificationScheduler(private val context: Context) {
 
     private fun scheduleNotification(todo: Todo, time: Long, requestCodeSuffix: Int) {
         if (time < System.currentTimeMillis()) return
-        var timesLot = "in 5 minutes";
-        if (requestCodeSuffix == 1){
-            timesLot = "in 5 hours";
+
+        var timesLot = "in 5 minutes"
+        if (requestCodeSuffix == 1) {
+            timesLot = "in 5 hours"
         } else if (requestCodeSuffix == 2) {
-            timesLot = "in 1 hour";
+            timesLot = "in 1 hour"
         }
+
         val intent = Intent(context, TodoNotificationReceiver::class.java).apply {
             putExtra("todoTitle", todo.title)
             putExtra("todoId", todo.id)
@@ -66,6 +72,70 @@ class NotificationScheduler(private val context: Context) {
         val pendingIntent = PendingIntent.getBroadcast(
             context,
             todo.id.hashCode() + requestCodeSuffix,
+            intent,
+            PendingIntent.FLAG_NO_CREATE or PendingIntent.FLAG_IMMUTABLE
+        )
+        pendingIntent?.let { alarmManager.cancel(it) }
+    }
+
+    /* =========================
+       MOOD DAILY REMINDERS
+       ========================= */
+
+    fun scheduleDailyMoodReminders() {
+        scheduleDailyMoodReminder(hour = 8, minute = 0, requestCode = 1001, label = "Morning")
+        scheduleDailyMoodReminder(hour = 13, minute = 0, requestCode = 1002, label = "Afternoon")
+        scheduleDailyMoodReminder(hour = 20, minute = 0, requestCode = 1003, label = "Evening")
+    }
+
+    fun cancelDailyMoodReminders() {
+        cancelDailyMoodReminder(1001)
+        cancelDailyMoodReminder(1002)
+        cancelDailyMoodReminder(1003)
+    }
+
+    private fun scheduleDailyMoodReminder(
+        hour: Int,
+        minute: Int,
+        requestCode: Int,
+        label: String
+    ) {
+        val calendar = Calendar.getInstance().apply {
+            set(Calendar.HOUR_OF_DAY, hour)
+            set(Calendar.MINUTE, minute)
+            set(Calendar.SECOND, 0)
+            set(Calendar.MILLISECOND, 0)
+
+            // If time already passed today → schedule tomorrow
+            if (before(Calendar.getInstance())) {
+                add(Calendar.DAY_OF_YEAR, 1)
+            }
+        }
+
+        val intent = Intent(context, MoodNotificationReceiver::class.java).apply {
+            putExtra("timeOfDayLabel", label)
+        }
+
+        val pendingIntent = PendingIntent.getBroadcast(
+            context,
+            requestCode,
+            intent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+
+        alarmManager.setRepeating(
+            AlarmManager.RTC_WAKEUP,
+            calendar.timeInMillis,
+            AlarmManager.INTERVAL_DAY,
+            pendingIntent
+        )
+    }
+
+    private fun cancelDailyMoodReminder(requestCode: Int) {
+        val intent = Intent(context, MoodNotificationReceiver::class.java)
+        val pendingIntent = PendingIntent.getBroadcast(
+            context,
+            requestCode,
             intent,
             PendingIntent.FLAG_NO_CREATE or PendingIntent.FLAG_IMMUTABLE
         )

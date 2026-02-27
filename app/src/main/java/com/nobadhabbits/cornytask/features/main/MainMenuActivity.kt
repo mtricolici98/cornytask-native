@@ -330,8 +330,8 @@ fun MainScreen(onSignOut: () -> Unit, userViewModel: UserViewModel = viewModel()
                     MoodScreen(moodRecords = moodRecords)
                 }
                 composable("add_mood") {
-                    AddMoodScreen(onAddMood = { date, timeOfDay, moodScore ->
-                        moodViewModel.addMoodRecord(date, timeOfDay, moodScore)
+                    AddMoodScreen(onAddMood = { date, moodScore ->
+                        moodViewModel.addMoodRecord(date, moodScore)
                         navController.popBackStack()
                     })
                 }

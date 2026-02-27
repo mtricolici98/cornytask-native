@@ -16,9 +16,9 @@ class MoodViewModel(
     private val _moodRecords = MutableStateFlow<List<MoodRecord>>(emptyList())
     val moodRecords: StateFlow<List<MoodRecord>> = _moodRecords
 
-    fun addMoodRecord(date: Date, timeOfDay: TimeOfDay, moodScore: Int) {
+    fun addMoodRecord(date: Date, moodScore: Int) {
         viewModelScope.launch {
-            moodTrackingRepository.addMoodRecord(date, timeOfDay, moodScore)
+            moodTrackingRepository.addMoodRecord(date, moodScore)
         }
     }
 
