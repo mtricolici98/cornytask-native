@@ -92,6 +92,7 @@ import com.nobadhabbits.cornytask.features.todo.AddTodoActivity
 import com.nobadhabbits.cornytask.features.todo.TodoScreen
 import com.nobadhabbits.cornytask.features.user.UserViewModel
 import com.nobadhabbits.cornytask.features.widget.ACTION_DATA_UPDATED
+import com.nobadhabbits.cornytask.features.widget.MoodNotificationReceiver.Companion.EXTRA_OPEN_ADD_MOOD
 import com.nobadhabbits.cornytask.features.widget.TodoWidget
 import com.nobadhabbits.cornytask.ui.theme.Cornytaskv2Theme
 import com.nobadhabbits.cornytask.ui.theme.DeepPink
@@ -187,6 +188,17 @@ fun MainScreen(onSignOut: () -> Unit, userViewModel: UserViewModel = viewModel()
     val moodViewModel: MoodViewModel = viewModel(
         factory = MoodViewModelFactory(MoodTrackingRepository(FirebaseFirestore.getInstance(), FirebaseAuth.getInstance()))
     )
+    (context as? MainMenuActivity)?.intent?.getBooleanExtra(EXTRA_OPEN_ADD_MOOD, false)?.let {
+        LaunchedEffect(it) {
+            navController.navigate("add_mood") {
+                popUpTo(navController.graph.findStartDestination().id) {
+                    saveState = true
+                }
+                launchSingleTop = true
+                restoreState = true
+            }
+        }
+    }
 
     (context as? MainMenuActivity)?.intent?.getStringExtra("timeGoalId")?.let {
         LaunchedEffect(it) {

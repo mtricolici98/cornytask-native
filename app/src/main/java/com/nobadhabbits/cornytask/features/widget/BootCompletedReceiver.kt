@@ -17,6 +17,8 @@ class BootCompletedReceiver : BroadcastReceiver() {
             val scheduler = NotificationScheduler(context)
             scheduler.cancelDailyMoodReminders()
             scheduler.scheduleDailyMoodReminders()
+            scheduler.cancelWaterReminders()
+            scheduler.scheduleWaterReminders()
             CoroutineScope(Dispatchers.IO).launch {
                 val todos = repository.fetchAllTodos()
                 todos.forEach {

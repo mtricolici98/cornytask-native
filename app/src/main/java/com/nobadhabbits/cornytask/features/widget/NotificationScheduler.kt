@@ -131,6 +131,43 @@ class NotificationScheduler(private val context: Context) {
         )
     }
 
+    private fun scheduleWaterReminder(
+        hour: Int,
+        minute: Int,
+        requestCode: Int,
+        label: String
+    ) {
+        val calendar = Calendar.getInstance().apply {
+            set(Calendar.HOUR_OF_DAY, hour)
+            set(Calendar.MINUTE, minute)
+            set(Calendar.SECOND, 0)
+            set(Calendar.MILLISECOND, 0)
+
+            // If time already passed today → schedule tomorrow
+            if (before(Calendar.getInstance())) {
+                add(Calendar.DAY_OF_YEAR, 1)
+            }
+        }
+
+        val intent = Intent(context, DrinkSomeWaterReceiver::class.java).apply {
+            putExtra("timeOfDayLabel", label)
+        }
+
+        val pendingIntent = PendingIntent.getBroadcast(
+            context,
+            requestCode,
+            intent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+
+        alarmManager.setRepeating(
+            AlarmManager.RTC_WAKEUP,
+            calendar.timeInMillis,
+            AlarmManager.INTERVAL_DAY,
+            pendingIntent
+        )
+    }
+
     private fun cancelDailyMoodReminder(requestCode: Int) {
         val intent = Intent(context, MoodNotificationReceiver::class.java)
         val pendingIntent = PendingIntent.getBroadcast(
@@ -140,5 +177,26 @@ class NotificationScheduler(private val context: Context) {
             PendingIntent.FLAG_NO_CREATE or PendingIntent.FLAG_IMMUTABLE
         )
         pendingIntent?.let { alarmManager.cancel(it) }
+    }
+
+    fun  cancelWaterReminders() {
+        val intent = Intent(context, DrinkSomeWaterReceiver::class.java)
+        for (rc in (1004..1009)) {
+            val pendingIntent = PendingIntent.getBroadcast(
+                context,
+            rc,
+            intent,
+            PendingIntent.FLAG_NO_CREATE or PendingIntent.FLAG_IMMUTABLE
+        )
+            pendingIntent?.let { alarmManager.cancel(it) }
+        }
+    }
+
+    fun  scheduleWaterReminders() {
+        scheduleWaterReminder(hour = 9, minute = 0, requestCode = 1004, label = "Morning")
+        scheduleWaterReminder(hour = 11, minute = 0, requestCode = 1005, label = "Afternoon")
+        scheduleWaterReminder(hour = 14, minute = 0, requestCode = 1007, label = "Evening")
+        scheduleWaterReminder(hour = 17, minute = 0, requestCode = 1008, label = "Evening")
+        scheduleWaterReminder(hour = 20, minute = 0, requestCode = 1009, label = "Evening")
     }
 }

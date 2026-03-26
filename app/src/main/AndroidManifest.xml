@@ -22,9 +22,14 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.Cornytaskv2">
 
-        <receiver android:name=".features.widget.TodoNotificationReceiver" android:exported="false"/>
+        <receiver android:name=".features.widget.TodoNotificationReceiver" android:exported="true" android:enabled="true"/>
         <receiver
             android:name=".features.widget.MoodNotificationReceiver"
+            android:enabled="true"
+            android:exported="true" />
+        <receiver
+            android:name=".features.widget.DrinkSomeWaterReceiver"
+            android:enabled="true"
             android:exported="true" />
         <receiver android:name=".features.widget.BootCompletedReceiver" android:exported="true" android:enabled="true">
             <intent-filter>
