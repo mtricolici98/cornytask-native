@@ -18,6 +18,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CalendarToday
 import androidx.compose.material.icons.filled.List
+import androidx.compose.material.icons.filled.Woman
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.Icon
@@ -43,6 +44,7 @@ import com.nobadhabbits.cornytask.R
 import com.nobadhabbits.cornytask.data.Reward
 import com.nobadhabbits.cornytask.data.Todo
 import com.nobadhabbits.cornytask.features.calendar.CalendarScreen
+import com.nobadhabbits.cornytask.features.cycle.CycleScreen
 import com.nobadhabbits.cornytask.features.rewards.RewardViewModel
 import com.nobadhabbits.cornytask.ui.theme.Purple40
 import java.text.SimpleDateFormat
@@ -61,6 +63,12 @@ private val negativeMessages = listOf(
     "Don't give up!"
 )
 
+private enum class SelectedMenu(val idx: Int) {
+   LIST(0),
+    CALENDAR(1),
+   MENSTRUATION(2)
+}
+
 @Composable
 fun TodoScreen(
     todoViewModel: TodoViewModel = viewModel(factory = TodoViewModelFactory(LocalContext.current)),
@@ -72,35 +80,46 @@ fun TodoScreen(
     val rewards by rewardViewModel.rewards.collectAsState()
     var showDialog by remember { mutableStateOf<Todo?>(null) }
     val context = LocalContext.current
-    var showCalendar by remember { mutableStateOf(false) }
-
+    var selectedTab by remember { mutableStateOf(SelectedMenu.LIST) }
     val currentCoins = user?.coins ?: 0
 
     Column(modifier = Modifier.fillMaxSize()) {
-        TabRow(selectedTabIndex = if (showCalendar) 1 else 0) {
+        TabRow(selectedTabIndex = selectedTab.idx) {
             Tab(
-                selected = !showCalendar,
+                selected = selectedTab == SelectedMenu.LIST,
                 onClick = { 
-                    showCalendar = false
+                    selectedTab = SelectedMenu.LIST
                     onTabSelected(true)
                 },
                 icon = { Icon(Icons.Default.List, contentDescription = "TODOs") }
             )
             Tab(
-                selected = showCalendar,
+                selected = selectedTab == SelectedMenu.CALENDAR,
                 onClick = { 
-                    showCalendar = true
+                    selectedTab = SelectedMenu.CALENDAR
                     onTabSelected(false)
                  },
                 icon = { Icon(Icons.Default.CalendarToday, contentDescription = "Calendar") }
             )
+           Tab(
+               selected = selectedTab == SelectedMenu.MENSTRUATION,
+               onClick = {
+                   selectedTab = SelectedMenu.MENSTRUATION
+                   onTabSelected(false)
+               },
+               icon = { Icon(Icons.Default.Woman, contentDescription = "Cycle") }
+           )
         }
 
-        if (showCalendar) {
+        if (selectedTab == SelectedMenu.CALENDAR) {
             Box(modifier = Modifier.fillMaxSize()) {
                 CalendarScreen()
             }
-        } else {
+        } else if (selectedTab == SelectedMenu.MENSTRUATION) {
+            Box(modifier = Modifier.fillMaxSize()) {
+                CycleScreen()
+            }
+        } else  {
             if (todos.isEmpty()) {
                 Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                     Text("You have not created any TODOs yet.")

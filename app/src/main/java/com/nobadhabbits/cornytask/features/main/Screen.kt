@@ -15,6 +15,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 object Routes {
     const val MORE_GRAPH = "More"
     const val MORE_MAIN = "More/more_main"
+    const val MOOD_MAIN = "mood_main"
     const val TIMEGOALS_GRAPH = "TimeGoals"
     const val TIMEGOALS_MAIN = "TimeGoalsMain"
 }

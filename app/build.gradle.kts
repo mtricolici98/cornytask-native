@@ -3,6 +3,7 @@ plugins {
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
     id("com.google.gms.google-services")
+    id("com.google.devtools.ksp")
 }
 
 android {
@@ -15,8 +16,8 @@ android {
         applicationId = "com.nobadhabbits.cornytask"
         minSdk = 26
         targetSdk = 36
-        versionCode = 13
-        versionName = "1.12"
+        versionCode = 14
+        versionName = "1.13"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -66,7 +67,16 @@ dependencies {
     implementation("androidx.work:work-runtime-ktx:2.11.0")
     implementation("nl.dionsegijn:konfetti-compose:2.0.2")
     implementation(libs.androidx.compose.runtime.livedata)
+    implementation("androidx.room:room-runtime:2.7.0")
 
+    // Kotlin extensions (Coroutines + Flow support)
+    implementation("androidx.room:room-ktx:2.7.0")
+
+    // Annotation processor (KSP recommended)
+    ksp("androidx.room:room-compiler:2.7.0")
+
+    implementation(libs.vico.compose)
+    implementation(libs.vico.compose.m3)
     debugImplementation("androidx.glance:glance-appwidget-preview:1.0.0")
 
     // Glance

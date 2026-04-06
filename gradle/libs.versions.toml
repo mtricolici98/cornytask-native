@@ -20,7 +20,8 @@ material3 = "1.4.0"
 runtimeLivedata = "1.10.1"
 richeditor = "1.0.0-beta03"
 foundation = "1.7.0"
-
+room3Compiler = "3.0.0-alpha02"
+vico = "3.1.0"
 [libraries]
 androidx-compose-material3-pull-to-refresh = { module = "androidx.compose.material3:material3-pull-to-refresh" }
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -50,7 +51,17 @@ androidx-material3 = { group = "androidx.compose.material3", name = "material3",
 androidx-compose-runtime-livedata = { group = "androidx.compose.runtime", name = "runtime-livedata", version.ref = "runtimeLivedata" }
 richeditor = { module = "com.mohamedrejeb.richeditor:richeditor-compose", version.ref = "richeditor" }
 androidx-foundation = { group = "androidx.compose.foundation", name = "foundation", version.ref = "foundation" }
+androidx-room3-compiler = { group = "androidx.room3", name = "room3-compiler", version.ref = "room3Compiler" }
+vico-compose = { group = "com.patrykandpatrick.vico", name = "compose", version.ref = "vico" }
 
+# Material 2 theming in Compose Multiplatform
+vico-compose-m2 = { group = "com.patrykandpatrick.vico", name = "compose-m2", version.ref = "vico" }
+
+# Material 3 theming in Compose Multiplatform
+vico-compose-m3 = { group = "com.patrykandpatrick.vico", name = "compose-m3", version.ref = "vico" }
+
+# Android view system
+vico-views = { group = "com.patrykandpatrick.vico", name = "views", version.ref = "vico" }
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
 kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }

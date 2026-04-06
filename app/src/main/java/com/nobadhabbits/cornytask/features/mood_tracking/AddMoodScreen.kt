@@ -15,22 +15,36 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import java.util.Date
-
+import java.text.SimpleDateFormat
+import java.util.*
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AddMoodScreen(
     onAddMood: (Date, Int) -> Unit
 ) {
     var moodScore by remember { mutableStateOf(0) }
+    var selectedDateTime by remember { mutableStateOf(Date()) }
+
+    var showDatePicker by remember { mutableStateOf(false) }
+    var showTimePicker by remember { mutableStateOf(false) }
+
+    val calendar = remember { Calendar.getInstance() }
+
+    val formattedDate = remember(selectedDateTime) {
+        SimpleDateFormat("MMM d, yyyy • h:mm a", Locale.getDefault())
+            .format(selectedDateTime)
+    }
 
     Scaffold(
         floatingActionButton = {
             FloatingActionButton(
-                onClick = { onAddMood(Date(), moodScore) }
+                onClick = { onAddMood(selectedDateTime, moodScore) }
             ) {
                 Icon(Icons.Filled.Check, contentDescription = "Add Mood")
             }
         }
     ) { padding ->
+
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -39,11 +53,6 @@ fun AddMoodScreen(
                 .verticalScroll(rememberScrollState()),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            Text(
-                text = "Add mood",
-                style = MaterialTheme.typography.headlineSmall
-            )
-
             ElevatedCard(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(20.dp)
@@ -58,9 +67,10 @@ fun AddMoodScreen(
                     ) {
                         Text("Mood", style = MaterialTheme.typography.titleMedium)
                         Spacer(Modifier.weight(1f))
+
                         AssistChip(
-                            onClick = { /* no-op */ },
-                            label = { Text("Selected: $moodScore") }
+                            onClick = { showDatePicker = true },
+                            label = { Text(formattedDate) }
                         )
                     }
 
@@ -76,16 +86,62 @@ fun AddMoodScreen(
                     )
                 }
             }
-
-            Text(
-                text = "If you ever feel unsafe or overwhelmed, please reach out to a trusted adult or local emergency help.",
-                style = MaterialTheme.typography.bodySmall,
-                textAlign = TextAlign.Center,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(bottom = 80.dp) // keep space so FAB doesn't cover text
-            )
         }
+    }
+
+    // -----------------------
+    // DATE PICKER
+    // -----------------------
+    if (showDatePicker) {
+        val datePickerState = rememberDatePickerState()
+
+        DatePickerDialog(
+            onDismissRequest = { showDatePicker = false },
+            confirmButton = {
+                TextButton(onClick = {
+                    val millis = datePickerState.selectedDateMillis
+                    if (millis != null) {
+                        calendar.timeInMillis = millis
+                        showDatePicker = false
+                        showTimePicker = true
+                    }
+                }) {
+                    Text("Next")
+                }
+            }
+        ) {
+            DatePicker(state = datePickerState)
+        }
+    }
+
+    // -----------------------
+    // TIME PICKER
+    // -----------------------
+    if (showTimePicker) {
+        val timePickerState = rememberTimePickerState()
+
+        AlertDialog(
+            onDismissRequest = { showTimePicker = false },
+            confirmButton = {
+                TextButton(onClick = {
+                    calendar.set(Calendar.HOUR_OF_DAY, timePickerState.hour)
+                    calendar.set(Calendar.MINUTE, timePickerState.minute)
+
+                    selectedDateTime = calendar.time
+                    showTimePicker = false
+                }) {
+                    Text("OK")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showTimePicker = false }) {
+                    Text("Cancel")
+                }
+            },
+            text = {
+                TimePicker(state = timePickerState)
+            }
+        )
     }
 }
 

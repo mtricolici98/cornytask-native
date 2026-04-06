@@ -5,6 +5,7 @@ import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
+import android.util.Log
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.core.animateFloatAsState
@@ -184,22 +185,35 @@ fun MainScreen(onSignOut: () -> Unit, userViewModel: UserViewModel = viewModel()
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     var showFab by remember { mutableStateOf(true) }
-
+    var handledAddMoodIntent by remember { mutableStateOf(false) }
     val moodViewModel: MoodViewModel = viewModel(
-        factory = MoodViewModelFactory(MoodTrackingRepository(FirebaseFirestore.getInstance(), FirebaseAuth.getInstance()))
+        factory = MoodViewModelFactory(
+            MoodTrackingRepository(
+                FirebaseFirestore.getInstance(),
+                FirebaseAuth.getInstance()
+            )
+        )
     )
-    (context as? MainMenuActivity)?.intent?.getBooleanExtra(EXTRA_OPEN_ADD_MOOD, false)?.let {
-        LaunchedEffect(it) {
-            navController.navigate("add_mood") {
-                popUpTo(navController.graph.findStartDestination().id) {
-                    saveState = true
+    val activity = context as? MainMenuActivity
+
+    LaunchedEffect(Unit) {
+        if (!handledAddMoodIntent) {
+            val shouldOpen = activity?.intent?.getBooleanExtra(EXTRA_OPEN_ADD_MOOD, false) == true
+
+            if (shouldOpen) {
+                handledAddMoodIntent = true
+                Log.i("TAG", "MainScreen: logging this aagaina")
+                navController.navigate("${Routes.MORE_GRAPH}/add_mood"){
+                    popUpTo(navController.graph.findStartDestination().id) {
+                    }
+                    launchSingleTop = true
+                    restoreState = true
                 }
-                launchSingleTop = true
-                restoreState = true
+                // Clear intent AFTER consuming
+                activity?.intent?.removeExtra(EXTRA_OPEN_ADD_MOOD)
             }
         }
     }
-
     (context as? MainMenuActivity)?.intent?.getStringExtra("timeGoalId")?.let {
         LaunchedEffect(it) {
             navController.navigate(Screen.TimeGoals.route) {
@@ -221,19 +235,21 @@ fun MainScreen(onSignOut: () -> Unit, userViewModel: UserViewModel = viewModel()
             WindowInsets.safeDrawing.only(
                 WindowInsetsSides.Top + WindowInsetsSides.Horizontal
             )
-            ),
+        ),
         topBar = {
             TopAppBar(
                 title = { Text("CornyTask") },
                 actions = {
                     user?.let { coinPill ->
-                        CoinPill(coins = coinPill.coins, onClick = {navController.navigate(Screen.Rewards.route) {
-                            popUpTo(navController.graph.findStartDestination().id) {
-                                saveState = true
+                        CoinPill(coins = coinPill.coins, onClick = {
+                            navController.navigate(Screen.Rewards.route) {
+                                popUpTo(navController.graph.findStartDestination().id) {
+                                    saveState = true
+                                }
+                                launchSingleTop = true
+                                restoreState = true
                             }
-                            launchSingleTop = true
-                            restoreState = true
-                        } })
+                        })
                     }
                     Box {
                         IconButton(onClick = { showMenu = !showMenu }) {
@@ -247,13 +263,19 @@ fun MainScreen(onSignOut: () -> Unit, userViewModel: UserViewModel = viewModel()
                                 text = { Text("Sign out") },
                                 onClick = {
                                     scope.launch {
-                                        GlanceAppWidgetManager(context).getGlanceIds(TodoWidget::class.java).forEach { glanceId ->
-                                            updateAppWidgetState(context, glanceId) {
-                                                it.clear()
+                                        GlanceAppWidgetManager(context).getGlanceIds(TodoWidget::class.java)
+                                            .forEach { glanceId ->
+                                                updateAppWidgetState(context, glanceId) {
+                                                    it.clear()
+                                                }
                                             }
-                                        }
 
-                                        context.sendBroadcast(Intent(context, TodoWidget::class.java).setAction(ACTION_DATA_UPDATED))
+                                        context.sendBroadcast(
+                                            Intent(
+                                                context,
+                                                TodoWidget::class.java
+                                            ).setAction(ACTION_DATA_UPDATED)
+                                        )
                                     }
                                     onSignOut()
                                 }
@@ -265,12 +287,26 @@ fun MainScreen(onSignOut: () -> Unit, userViewModel: UserViewModel = viewModel()
         },
         floatingActionButton = {
             if (currentDestination?.route == Screen.Todo.route && showFab) {
-                FloatingActionButton(onClick = { context.startActivity(Intent(context, AddTodoActivity::class.java)) }) {
+                FloatingActionButton(onClick = {
+                    context.startActivity(
+                        Intent(
+                            context,
+                            AddTodoActivity::class.java
+                        )
+                    )
+                }) {
                     Icon(Icons.Default.Add, contentDescription = "Add a new TODO")
                 }
             } else if (currentDestination?.route == MoreScreenItems.Mood.route) {
-                FloatingActionButton(onClick = { navController.navigate("add_mood") }) {
-                    Icon(Icons.Default.Add, contentDescription = "Add a new mood record")
+                FloatingActionButton(
+                    onClick = {
+
+                        navController.navigate("${Routes.MORE_GRAPH}/add_mood")
+                        {
+                            launchSingleTop = true
+                        }
+                    }
+                ){Icon(Icons.Default.Add, contentDescription = "Add a new mood record")
                 }
             }
         },
@@ -278,24 +314,24 @@ fun MainScreen(onSignOut: () -> Unit, userViewModel: UserViewModel = viewModel()
 
             val currentRoute = currentDestination?.route
             if (showBottomBar) {
-            NavigationBar {
-                val items = listOf(
-                    Screen.Todo,
-                    Screen.Rewards,
-                    Screen.TimeGoals,
-                    Screen.More
-                )
-                items.forEach { screen ->
-                    val selected = when (screen) {
-                        Screen.More -> currentRoute?.startsWith("More/") == true
-                        Screen.TimeGoals -> currentRoute == Routes.TIMEGOALS_MAIN || currentRoute == "timer_screen"
-                        else -> currentRoute == screen.route
-                    }
-                    NavigationBarItem(
-                        icon = { Icon(screen.icon, contentDescription = null) },
-                        label = { Text(screen.label) },
-                        selected = selected,
-                        onClick = {
+                NavigationBar {
+                    val items = listOf(
+                        Screen.Todo,
+                        Screen.Rewards,
+                        Screen.TimeGoals,
+                        Screen.More
+                    )
+                    items.forEach { screen ->
+                        val selected = when (screen) {
+                            Screen.More -> currentRoute?.startsWith("More/") == true
+                            Screen.TimeGoals -> currentRoute == Routes.TIMEGOALS_MAIN || currentRoute == "timer_screen"
+                            else -> currentRoute == screen.route
+                        }
+                        NavigationBarItem(
+                            icon = { Icon(screen.icon, contentDescription = null) },
+                            label = { Text(screen.label) },
+                            selected = selected,
+                            onClick = {
                                 navController.navigate(screen.route) {
                                     popUpTo(navController.graph.findStartDestination().id) {
                                         saveState = true
@@ -303,17 +339,17 @@ fun MainScreen(onSignOut: () -> Unit, userViewModel: UserViewModel = viewModel()
                                     launchSingleTop = true
                                     restoreState = true
                                 }
-                        },
-                        colors = NavigationBarItemDefaults.colors(
-                            selectedIconColor = DeepPink,
-                            unselectedIconColor = Pink40,
-                            selectedTextColor = DeepPink,
-                            unselectedTextColor = Pink40,
-                            indicatorColor = LightPink
+                            },
+                            colors = NavigationBarItemDefaults.colors(
+                                selectedIconColor = DeepPink,
+                                unselectedIconColor = Pink40,
+                                selectedTextColor = DeepPink,
+                                unselectedTextColor = Pink40,
+                                indicatorColor = LightPink
+                            )
                         )
-                    )
+                    }
                 }
-            }
             }
         }
     ) { innerPadding ->
@@ -334,14 +370,14 @@ fun MainScreen(onSignOut: () -> Unit, userViewModel: UserViewModel = viewModel()
             navigation(startDestination = Routes.MORE_MAIN, route = Routes.MORE_GRAPH) {
                 composable(Routes.MORE_MAIN) { MoreScreen(navController = navController) }
                 composable(MoreScreenItems.History.route) { HistoryScreen() }
-                composable(MoreScreenItems.Mood.route) {
+                composable("${MoreScreenItems.Mood.route}") {
                     val moodRecords by moodViewModel.moodRecords.collectAsState()
                     LaunchedEffect(Unit) {
                         moodViewModel.fetchMoodRecords()
                     }
                     MoodScreen(moodRecords = moodRecords)
                 }
-                composable("add_mood") {
+                composable("${Routes.MORE_GRAPH}/add_mood") {
                     AddMoodScreen(onAddMood = { date, moodScore ->
                         moodViewModel.addMoodRecord(date, moodScore)
                         navController.popBackStack()
@@ -374,7 +410,9 @@ fun CoinPill(coins: Int, onClick: () -> Unit) {
     )
     Card(
         shape = CircleShape,
-        modifier = Modifier.padding(end = 8.dp).clickable(onClick = onClick),
+        modifier = Modifier
+            .padding(end = 8.dp)
+            .clickable(onClick = onClick),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
         colors = CardDefaults.cardColors(containerColor = androidx.compose.material3.MaterialTheme.colorScheme.surfaceVariant)
     ) {
@@ -382,7 +420,10 @@ fun CoinPill(coins: Int, onClick: () -> Unit) {
             modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Text(text = animatedCoins.toInt().toString(), color = androidx.compose.material3.MaterialTheme.colorScheme.onSurfaceVariant)
+            Text(
+                text = animatedCoins.toInt().toString(),
+                color = androidx.compose.material3.MaterialTheme.colorScheme.onSurfaceVariant
+            )
             Spacer(Modifier.width(4.dp))
             Image(
                 painter = painterResource(id = R.drawable.unicorn_small),
@@ -393,7 +434,8 @@ fun CoinPill(coins: Int, onClick: () -> Unit) {
     }
 }
 
-class MoodViewModelFactory(private val repository: MoodTrackingRepository) : androidx.lifecycle.ViewModelProvider.Factory {
+class MoodViewModelFactory(private val repository: MoodTrackingRepository) :
+    androidx.lifecycle.ViewModelProvider.Factory {
     override fun <T : androidx.lifecycle.ViewModel> create(modelClass: Class<T>): T {
         if (modelClass.isAssignableFrom(MoodViewModel::class.java)) {
             @Suppress("UNCHECKED_CAST")
