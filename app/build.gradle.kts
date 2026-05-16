@@ -16,8 +16,8 @@ android {
         applicationId = "com.nobadhabbits.cornytask"
         minSdk = 26
         targetSdk = 36
-        versionCode = 14
-        versionName = "1.13"
+        versionCode = 16
+        versionName = "1.15"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }

@@ -14,29 +14,10 @@ class OneTimeNotificationSchedulerWorker(
 
     override suspend fun doWork(): Result {
         return try {
-            val prefs = context.getSharedPreferences("app_prefs", Context.MODE_PRIVATE)
-            val notificationsScheduled = prefs.getBoolean("one_time_notifications_scheduled", false)
 
-            if (notificationsScheduled) {
-                return Result.success()
-            }
-            
-            if (FirebaseApp.getApps(context).isEmpty()) {
-                FirebaseApp.initializeApp(context)
-            }
-
-            val todoRepository = TodoRepository(context)
             val notificationScheduler = NotificationScheduler(context)
-
-            val todos = todoRepository.fetchAllTodos()
-            todos.forEach { todo ->
-                if (todo.dueDate != null) {
-                    notificationScheduler.scheduleNotifications(todo)
-                }
-            }
-
-            prefs.edit { putBoolean("one_time_notifications_scheduled", true) }
-
+            notificationScheduler.cancelDailyMoodReminders()
+            notificationScheduler.scheduleDailyMoodReminders()
             Result.success()
         } catch (e: Exception) {
             Result.retry()

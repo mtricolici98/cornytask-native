@@ -1,0 +1,22 @@
+
+§
+;
+android*http://schemas.android.com/apk/res/android9
+4
+app'http://schemas.android.com/apk/res-auto9	shortcuts*¦
+
+capability"Q
+*http://schemas.android.com/apk/res/androidnameactions.intent.GET_THING(ƒ€„*»
+²intent"ˆ
+*http://schemas.android.com/apk/res/androidtargetClassHcom.nobadhabbits.cornytask.features.todo.CreateTodoFromAssistantActivity(¯€„"\
+*http://schemas.android.com/apk/res/androidtargetPackagecom.nobadhabbits.cornytask(¡€„"U
+*http://schemas.android.com/apk/res/androidactionandroid.intent.action.VIEW(­€„*l
+dcategory"X
+*http://schemas.android.com/apk/res/androidnameandroid.intent.category.DEFAULT(ƒ€„H*n
+fcategory"Z
+*http://schemas.android.com/apk/res/androidname!android.intent.category.BROWSABLE(ƒ€„J*t
+lurl-template"\
+*http://schemas.android.com/apk/res/androidvalue"app://cornytask/createTodo{?query}(¤€„P*“
+Š	parameter"=
+*http://schemas.android.com/apk/res/androidkeyquery(èƒ„">
+*http://schemas.android.com/apk/res/androidnamequery(ƒ€„'l19

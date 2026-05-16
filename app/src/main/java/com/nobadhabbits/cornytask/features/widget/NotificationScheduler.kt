@@ -114,6 +114,7 @@ class NotificationScheduler(private val context: Context) {
 
         val intent = Intent(context, MoodNotificationReceiver::class.java).apply {
             putExtra("timeOfDayLabel", label)
+            action = "Daily Reminder for mood: $label"
         }
 
         val pendingIntent = PendingIntent.getBroadcast(

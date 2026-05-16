@@ -1,0 +1,18 @@
+
+Æ
+;
+android*http://schemas.android.com/apk/res/android,appwidget-provider"
+*http://schemas.android.com/apk/res/androidinitialLayout@layout/widget_initial_layout"(Ñ„„2(
+&ö‰°ølayout/widget_initial_layout0"X
+*http://schemas.android.com/apk/res/androidwidgetCategoryhome_screen"(Ä‡„2:8"O
+*http://schemas.android.com/apk/res/android	minHeight110dp"(À‚„2:hÜ"\
+*http://schemas.android.com/apk/res/androidupdatePeriodMillis86400000"(Ğ„„2:0€¸™)"O
+*http://schemas.android.com/apk/res/androidtargetCellWidth4"(´Œ„2:0"€
+*http://schemas.android.com/apk/res/androidpreviewImage@drawable/widget_prview"(Ú…„2"
+ ¢‚ ødrawable/widget_prview0"P
+*http://schemas.android.com/apk/res/androidtargetCellHeight2"(µŒ„2:0"…
+*http://schemas.android.com/apk/res/androiddescription@string/widget_description"( €„2%
+#¤‚Äøstring/widget_description0"N
+*http://schemas.android.com/apk/res/androidminWidth250dp"(¿‚„2:hô"\
+*http://schemas.android.com/apk/res/android
+resizeModehorizontal|vertical"(ã†„2:8,

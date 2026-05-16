@@ -1,0 +1,166 @@
+{
+  "project_info": {
+    "project_number": "945470016065",
+    "project_id": "cornytask",
+    "storage_bucket": "cornytask.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:945470016065:android:f00c6d6a69f342d31b54c0",
+        "android_client_info": {
+          "package_name": "com.example.cornytask"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "945470016065-jb931av59ljot4915ptbjnf5cgdm7e3p.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.cornytask",
+            "certificate_hash": "77b1a749ab7fd9192e89c66dd628a870aef9addc"
+          }
+        },
+        {
+          "client_id": "945470016065-iih8nn38l42eg291jssrjimdmtcjc89s.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDjjtOBc0G6EM5_fJ_HO3PuFwp2nOhfhz4"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "945470016065-iih8nn38l42eg291jssrjimdmtcjc89s.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:945470016065:android:d51e4c942f3568101b54c0",
+        "android_client_info": {
+          "package_name": "com.example.cornytask_native"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "945470016065-db56i9n5t35n73sgki492ep4ekkdr17q.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.cornytask_native",
+            "certificate_hash": "402386b7cfdd5faebe18207f544b205dfbfb31f9"
+          }
+        },
+        {
+          "client_id": "945470016065-iih8nn38l42eg291jssrjimdmtcjc89s.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDjjtOBc0G6EM5_fJ_HO3PuFwp2nOhfhz4"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "945470016065-iih8nn38l42eg291jssrjimdmtcjc89s.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:945470016065:android:a8b095f3e659e9a81b54c0",
+        "android_client_info": {
+          "package_name": "com.example.cornytask_v2"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "945470016065-1ig1cuoojgd8pebdmd0qpn491j3k4vjj.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.cornytask_v2",
+            "certificate_hash": "77b1a749ab7fd9192e89c66dd628a870aef9addc"
+          }
+        },
+        {
+          "client_id": "945470016065-iih8nn38l42eg291jssrjimdmtcjc89s.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDjjtOBc0G6EM5_fJ_HO3PuFwp2nOhfhz4"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "945470016065-iih8nn38l42eg291jssrjimdmtcjc89s.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:945470016065:android:b6fedb150b0c7ba61b54c0",
+        "android_client_info": {
+          "package_name": "com.nobadhabbits.cornytask"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "945470016065-f0kg6m91oreeptatg7tbjvrpel3qpvgv.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.nobadhabbits.cornytask",
+            "certificate_hash": "77b1a749ab7fd9192e89c66dd628a870aef9addc"
+          }
+        },
+        {
+          "client_id": "945470016065-p922c93sldcc5lchai9e68c4ep4lsn6q.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.nobadhabbits.cornytask",
+            "certificate_hash": "11376a9d4a1f26f164cbc794354a374ae68550a7"
+          }
+        },
+        {
+          "client_id": "945470016065-iih8nn38l42eg291jssrjimdmtcjc89s.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDjjtOBc0G6EM5_fJ_HO3PuFwp2nOhfhz4"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "945470016065-iih8nn38l42eg291jssrjimdmtcjc89s.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

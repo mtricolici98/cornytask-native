@@ -45,7 +45,7 @@ class CyclePredictor {
                 result[ovulation.plusDays(offset.toLong())] =
                     PredictionType.FERTILE
             }
-
+            // 5 days before ovulation and 1 day after ovulation chances are high.
             nextStart = nextStart.plusDays(avgCycle)
         }
 
