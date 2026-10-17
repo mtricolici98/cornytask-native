@@ -41,16 +41,25 @@ class NotesRepository {
         return doc?.toObject(Note::class.java)?.copy(id = doc.id)
     }
 
-    suspend fun saveNote(note: Note) {
-        val collection = notesCollection() ?: return
-        if (note.id.isBlank()) {
-            collection.add(note)
-        } else {
-            collection.document(note.id).set(note)
-        }
+    /**
+     * Writes the note and returns it with its id. New notes get their id up front, so saving
+     * the same note again (autosave) updates it instead of creating a duplicate.
+     *
+     * Not suspending on purpose: Firestore queues the write locally right away, so this is
+     * safe to call while a screen is being torn down.
+     */
+    fun saveNote(note: Note): Note? {
+        val collection = notesCollection() ?: return null
+        val doc = if (note.id.isBlank()) collection.document() else collection.document(note.id)
+        val saved = note.copy(id = doc.id)
+        doc.set(saved)
+        return saved
     }
 
-    suspend fun deleteNote(noteId: String) {
-        notesCollection()?.document(noteId)?.delete()
+    fun deleteNotes(noteIds: Collection<String>) {
+        val collection = notesCollection() ?: return
+        firestore.runBatch { batch ->
+            noteIds.forEach { batch.delete(collection.document(it)) }
+        }
     }
 }

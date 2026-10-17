@@ -46,7 +46,6 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -57,8 +56,6 @@ import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import androidx.core.view.WindowCompat
 import androidx.fragment.app.FragmentActivity
-import androidx.glance.appwidget.GlanceAppWidgetManager
-import androidx.glance.appwidget.state.updateAppWidgetState
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavDestination.Companion.hierarchy
 import androidx.navigation.NavGraph.Companion.findStartDestination
@@ -69,14 +66,11 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import androidx.navigation.navigation
-import com.google.android.gms.auth.api.signin.GoogleSignIn
-import com.google.android.gms.auth.api.signin.GoogleSignInClient
-import com.google.android.gms.auth.api.signin.GoogleSignInOptions
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.nobadhabbits.cornytask.R
 import com.nobadhabbits.cornytask.features.history.HistoryScreen
-import com.nobadhabbits.cornytask.features.login.LoginActivity
+import com.nobadhabbits.cornytask.features.login.AuthSession
 import com.nobadhabbits.cornytask.features.main.MoreScreen as MoreScreenItems
 import com.nobadhabbits.cornytask.features.mood_tracking.AddMoodScreen
 import com.nobadhabbits.cornytask.features.mood_tracking.MoodScreen
@@ -92,18 +86,22 @@ import com.nobadhabbits.cornytask.features.time_goals.TimerScreen
 import com.nobadhabbits.cornytask.features.todo.AddTodoActivity
 import com.nobadhabbits.cornytask.features.todo.TodoScreen
 import com.nobadhabbits.cornytask.features.user.UserViewModel
-import com.nobadhabbits.cornytask.features.widget.ACTION_DATA_UPDATED
 import com.nobadhabbits.cornytask.features.widget.MoodNotificationReceiver.Companion.EXTRA_OPEN_ADD_MOOD
-import com.nobadhabbits.cornytask.features.widget.TodoWidget
 import com.nobadhabbits.cornytask.ui.theme.Cornytaskv2Theme
 import com.nobadhabbits.cornytask.ui.theme.DeepPink
 import com.nobadhabbits.cornytask.ui.theme.LightPink
 import com.nobadhabbits.cornytask.ui.theme.Pink40
-import kotlinx.coroutines.launch
 
 class MainMenuActivity : FragmentActivity() {
 
-    private lateinit var googleSignInClient: GoogleSignInClient
+    private val auth = FirebaseAuth.getInstance()
+    private var redirectedToLogin = false
+
+    // If the Firebase session goes away (sign-out, revoked, expired), go to login
+    // instead of letting screens hit a missing user.
+    private val authStateListener = FirebaseAuth.AuthStateListener { firebaseAuth ->
+        if (firebaseAuth.currentUser == null) redirectToLogin()
+    }
 
     private val requestPermissionLauncher = registerForActivityResult(
         ActivityResultContracts.RequestPermission()
@@ -123,12 +121,11 @@ class MainMenuActivity : FragmentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        val gso = GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
-            .requestIdToken(getString(R.string.default_web_client_id))
-            .requestEmail()
-            .build()
-
-        googleSignInClient = GoogleSignIn.getClient(this, gso)
+        // Can be opened directly from the timer notification, bypassing MainActivity.
+        if (auth.currentUser == null) {
+            redirectToLogin()
+            return
+        }
 
         WindowCompat.setDecorFitsSystemWindows(window, false)
         setContent {
@@ -164,13 +161,25 @@ class MainMenuActivity : FragmentActivity() {
         }
     }
 
+    override fun onStart() {
+        super.onStart()
+        auth.addAuthStateListener(authStateListener)
+    }
+
+    override fun onStop() {
+        auth.removeAuthStateListener(authStateListener)
+        super.onStop()
+    }
+
     private fun signOut() {
-        googleSignInClient.signOut().addOnCompleteListener(this) {
-            val intent = Intent(this, LoginActivity::class.java)
-            intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
-            startActivity(intent)
-            finish()
-        }
+        AuthSession.signOut(this)
+    }
+
+    private fun redirectToLogin() {
+        if (redirectedToLogin) return
+        redirectedToLogin = true
+        startActivity(AuthSession.loginIntent(this))
+        finish()
     }
 }
 
@@ -183,7 +192,6 @@ fun MainScreen(onSignOut: () -> Unit, userViewModel: UserViewModel = viewModel()
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentDestination = navBackStackEntry?.destination
     val context = LocalContext.current
-    val scope = rememberCoroutineScope()
     var showFab by remember { mutableStateOf(true) }
     var handledAddMoodIntent by remember { mutableStateOf(false) }
     val moodViewModel: MoodViewModel = viewModel(
@@ -227,7 +235,7 @@ fun MainScreen(onSignOut: () -> Unit, userViewModel: UserViewModel = viewModel()
     }
 
     val showBottomBar = when (currentDestination?.route) {
-        "More/edit_note", "More/edit_note/{noteId}" -> false
+        "edit_note", "More/edit_note/{noteId}" -> false
         else -> true
     }
     Scaffold(
@@ -262,21 +270,7 @@ fun MainScreen(onSignOut: () -> Unit, userViewModel: UserViewModel = viewModel()
                             DropdownMenuItem(
                                 text = { Text("Sign out") },
                                 onClick = {
-                                    scope.launch {
-                                        GlanceAppWidgetManager(context).getGlanceIds(TodoWidget::class.java)
-                                            .forEach { glanceId ->
-                                                updateAppWidgetState(context, glanceId) {
-                                                    it.clear()
-                                                }
-                                            }
-
-                                        context.sendBroadcast(
-                                            Intent(
-                                                context,
-                                                TodoWidget::class.java
-                                            ).setAction(ACTION_DATA_UPDATED)
-                                        )
-                                    }
+                                    showMenu = false
                                     onSignOut()
                                 }
                             )
@@ -378,8 +372,8 @@ fun MainScreen(onSignOut: () -> Unit, userViewModel: UserViewModel = viewModel()
                     MoodScreen(moodRecords = moodRecords)
                 }
                 composable("${Routes.MORE_GRAPH}/add_mood") {
-                    AddMoodScreen(onAddMood = { date, moodScore ->
-                        moodViewModel.addMoodRecord(date, moodScore)
+                    AddMoodScreen(onAddMood = { date, moodScore, comment ->
+                        moodViewModel.addMoodRecord(date, moodScore, comment)
                         navController.popBackStack()
                     })
                 }
@@ -396,7 +390,7 @@ fun MainScreen(onSignOut: () -> Unit, userViewModel: UserViewModel = viewModel()
                 composable("edit_note") {
                     EditNoteScreen(navController = navController, noteId = null)
                 }
-                composable(MoreScreenItems.Settings.route) { SettingsScreen(onSignOut) }
+                composable(MoreScreenItems.Settings.route) { SettingsScreen() }
             }
         }
     }

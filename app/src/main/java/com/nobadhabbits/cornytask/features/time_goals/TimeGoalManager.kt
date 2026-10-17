@@ -109,6 +109,14 @@ object TimeGoalManager {
         }
     }
 
+    // Drops the local timer without touching Firestore (used on sign-out). The active
+    // goal stays on the user doc, so the timer resumes after signing back in.
+    fun reset() {
+        countDownTimer?.cancel()
+        countDownTimer = null
+        _timerState.value = TimerState.Idle
+    }
+
     private fun handleStop(timeGoal: TimeGoal, elapsedMillis: Long) {
         val elapsedMinutes = TimeUnit.MILLISECONDS.toMinutes(elapsedMillis)
         if (elapsedMinutes > 0) {

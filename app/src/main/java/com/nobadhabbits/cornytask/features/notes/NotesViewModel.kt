@@ -5,7 +5,6 @@ import androidx.lifecycle.viewModelScope
 import com.nobadhabbits.cornytask.data.Note
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.stateIn
-import kotlinx.coroutines.launch
 
 class NotesViewModel : ViewModel() {
 
@@ -14,13 +13,9 @@ class NotesViewModel : ViewModel() {
     val notes = repository.getNotesFlow()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
-    fun saveNote(note: Note) = viewModelScope.launch {
-        repository.saveNote(note)
-    }
+    fun saveNote(note: Note): Note? = repository.saveNote(note)
 
-    fun deleteNote(noteId: String) = viewModelScope.launch {
-        repository.deleteNote(noteId)
-    }
+    fun deleteNotes(noteIds: Collection<String>) = repository.deleteNotes(noteIds)
 
     suspend fun getNote(noteId: String): Note? {
         return repository.getNote(noteId)

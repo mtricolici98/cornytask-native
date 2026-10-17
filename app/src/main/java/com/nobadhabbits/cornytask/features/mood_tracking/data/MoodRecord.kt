@@ -14,5 +14,6 @@ data class MoodRecord(
     val timestamp: Date = Date(),
     val timeOfDay: TimeOfDay = TimeOfDay.Morning,
     val moodScore: Int = 0,
+    val comment: String = "",
     val userId: String = ""
 )

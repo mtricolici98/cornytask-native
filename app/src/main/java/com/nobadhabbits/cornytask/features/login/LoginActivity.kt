@@ -2,10 +2,10 @@ package com.nobadhabbits.cornytask.features.login
 
 import android.content.Intent
 import android.os.Bundle
+import android.util.Log
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -23,83 +23,113 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.credentials.Credential
+import androidx.credentials.CredentialManager
+import androidx.credentials.CustomCredential
+import androidx.credentials.GetCredentialRequest
+import androidx.credentials.exceptions.GetCredentialCancellationException
+import androidx.credentials.exceptions.GetCredentialException
+import androidx.credentials.exceptions.NoCredentialException
+import androidx.lifecycle.lifecycleScope
+import com.google.android.libraries.identity.googleid.GetGoogleIdOption
+import com.google.android.libraries.identity.googleid.GetSignInWithGoogleOption
+import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential
+import com.google.android.libraries.identity.googleid.GoogleIdTokenParsingException
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.auth.GoogleAuthProvider
 import com.nobadhabbits.cornytask.R
 import com.nobadhabbits.cornytask.features.main.MainMenuActivity
 import com.nobadhabbits.cornytask.features.widget.ACTION_DATA_UPDATED
 import com.nobadhabbits.cornytask.features.widget.TodoWidgetReceiver
 import com.nobadhabbits.cornytask.ui.theme.Cornytaskv2Theme
-import com.google.android.gms.auth.api.signin.GoogleSignIn
-import com.google.android.gms.auth.api.signin.GoogleSignInAccount
-import com.google.android.gms.auth.api.signin.GoogleSignInClient
-import com.google.android.gms.auth.api.signin.GoogleSignInOptions
-import com.google.android.gms.common.api.ApiException
-import com.google.android.gms.tasks.Task
-import com.google.firebase.auth.FirebaseAuth
-import com.google.firebase.auth.GoogleAuthProvider
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.tasks.await
 
 class LoginActivity : ComponentActivity() {
 
-    private lateinit var googleSignInClient: GoogleSignInClient
     private lateinit var firebaseAuth: FirebaseAuth
-
-    private val signInLauncher = registerForActivityResult(
-        ActivityResultContracts.StartActivityForResult()
-    ) { result ->
-        val task = GoogleSignIn.getSignedInAccountFromIntent(result.data)
-        handleSignInResult(task)
-    }
+    private lateinit var credentialManager: CredentialManager
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
         firebaseAuth = FirebaseAuth.getInstance()
-
-        val gso = GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
-            .requestIdToken(getString(R.string.default_web_client_id))
-            .requestEmail()
-            .build()
-
-        googleSignInClient = GoogleSignIn.getClient(this, gso)
+        credentialManager = CredentialManager.create(this)
 
         setContent {
             Cornytaskv2Theme {
-                LoginScreen(onSignInClick = ::signIn)
+                LoginScreen(onSignInClick = { signIn(silent = false) })
             }
+        }
+
+        // Firebase session lost but the Google account was used before: sign back in
+        // without making the user tap anything (or with a single tap after sign-out).
+        if (savedInstanceState == null && firebaseAuth.currentUser == null) {
+            signIn(silent = true)
         }
     }
 
     override fun onStart() {
         super.onStart()
-        val account = GoogleSignIn.getLastSignedInAccount(this)
-        if (account != null) {
+        if (firebaseAuth.currentUser != null) {
             navigateToMain()
         }
     }
 
-    private fun signIn() {
-        val signInIntent = googleSignInClient.signInIntent
-        signInLauncher.launch(signInIntent)
+    private fun signIn(silent: Boolean) {
+        val webClientId = getString(R.string.default_web_client_id)
+        val option = if (silent) {
+            GetGoogleIdOption.Builder()
+                .setServerClientId(webClientId)
+                .setFilterByAuthorizedAccounts(true)
+                .setAutoSelectEnabled(true)
+                .build()
+        } else {
+            GetSignInWithGoogleOption.Builder(webClientId).build()
+        }
+        val request = GetCredentialRequest.Builder()
+            .addCredentialOption(option)
+            .build()
+
+        lifecycleScope.launch {
+            try {
+                val result = credentialManager.getCredential(this@LoginActivity, request)
+                firebaseSignIn(result.credential)
+            } catch (e: GetCredentialCancellationException) {
+                // User dismissed the sheet; they can use the button.
+            } catch (e: NoCredentialException) {
+                // No previously used account: expected for the silent attempt.
+                if (!silent) showError("No Google account available on this device.")
+            } catch (e: GetCredentialException) {
+                Log.w(TAG, "getCredential failed", e)
+                if (!silent) showError("Sign-in failed: ${e.type}")
+            }
+        }
     }
 
-    private fun handleSignInResult(completedTask: Task<GoogleSignInAccount>) {
-        try {
-            val account = completedTask.getResult(ApiException::class.java)!!
-            val idToken = account.idToken!!
-            val credential = GoogleAuthProvider.getCredential(idToken, null)
-            firebaseAuth.signInWithCredential(credential)
-                .addOnCompleteListener(this) { task ->
-                    if (task.isSuccessful) {
-                        // Sign in success, update UI with the signed-in user's information
-                        navigateToMain()
-                    } else {
-                        // If sign in fails, display a message to the user.
-                        Toast.makeText(this, "Firebase authentication failed.", Toast.LENGTH_SHORT).show()
-                    }
-                }
-        } catch (e: ApiException) {
-            // The ApiException status code indicates the detailed failure reason.
-            Toast.makeText(this, "Sign-in failed: ${e.statusCode}", Toast.LENGTH_SHORT).show()
+    private suspend fun firebaseSignIn(credential: Credential) {
+        if (credential !is CustomCredential ||
+            credential.type != GoogleIdTokenCredential.TYPE_GOOGLE_ID_TOKEN_CREDENTIAL
+        ) {
+            showError("Unexpected credential type.")
+            return
         }
+        try {
+            val idToken = GoogleIdTokenCredential.createFrom(credential.data).idToken
+            val firebaseCredential = GoogleAuthProvider.getCredential(idToken, null)
+            firebaseAuth.signInWithCredential(firebaseCredential).await()
+            navigateToMain()
+        } catch (e: GoogleIdTokenParsingException) {
+            Log.w(TAG, "Invalid Google ID token", e)
+            showError("Sign-in failed.")
+        } catch (e: Exception) {
+            Log.w(TAG, "Firebase sign-in failed", e)
+            showError("Firebase authentication failed.")
+        }
+    }
+
+    private fun showError(message: String) {
+        Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
     }
 
     private fun navigateToMain() {
@@ -109,6 +139,10 @@ class LoginActivity : ComponentActivity() {
         sendBroadcast(intent)
         startActivity(Intent(this, MainMenuActivity::class.java))
         finish()
+    }
+
+    companion object {
+        private const val TAG = "LoginActivity"
     }
 }
 

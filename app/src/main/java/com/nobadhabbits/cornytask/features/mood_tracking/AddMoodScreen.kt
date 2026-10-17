@@ -12,6 +12,8 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import java.util.Date
@@ -20,9 +22,10 @@ import java.util.*
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AddMoodScreen(
-    onAddMood: (Date, Int) -> Unit
+    onAddMood: (date: Date, moodScore: Int, comment: String) -> Unit
 ) {
     var moodScore by remember { mutableStateOf(0) }
+    var comment by remember { mutableStateOf("") }
     var selectedDateTime by remember { mutableStateOf(Date()) }
 
     var showDatePicker by remember { mutableStateOf(false) }
@@ -38,7 +41,7 @@ fun AddMoodScreen(
     Scaffold(
         floatingActionButton = {
             FloatingActionButton(
-                onClick = { onAddMood(selectedDateTime, moodScore) }
+                onClick = { onAddMood(selectedDateTime, moodScore, comment) }
             ) {
                 Icon(Icons.Filled.Check, contentDescription = "Add Mood")
             }
@@ -86,6 +89,29 @@ fun AddMoodScreen(
                     )
                 }
             }
+
+            ElevatedCard(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(20.dp)
+            ) {
+                Column(
+                    modifier = Modifier.padding(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    Text("What happened?", style = MaterialTheme.typography.titleMedium)
+                    OutlinedTextField(
+                        value = comment,
+                        onValueChange = { comment = it },
+                        modifier = Modifier.fillMaxWidth(),
+                        placeholder = { Text("Optional comment about your day") },
+                        minLines = 3,
+                        keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences)
+                    )
+                }
+            }
+
+            // Keep the comment field clear of the FAB when scrolled to the bottom
+            Spacer(Modifier.height(72.dp))
         }
     }
 

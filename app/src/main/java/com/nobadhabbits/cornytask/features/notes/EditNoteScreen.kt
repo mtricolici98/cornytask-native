@@ -18,14 +18,12 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Done
 import androidx.compose.material.icons.filled.FormatBold
 import androidx.compose.material.icons.filled.FormatItalic
 import androidx.compose.material.icons.filled.FormatListBulleted
 import androidx.compose.material.icons.filled.FormatListNumbered
 import androidx.compose.material.icons.filled.FormatUnderlined
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -33,11 +31,16 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.SpanStyle
@@ -58,17 +61,55 @@ fun EditNoteScreen(
     noteId: String?,
     viewModel: NotesViewModel = viewModel()
 ) {
+    // Saveable so a new note that was already autosaved (and got an id) isn't
+    // saved again as a duplicate after a configuration change.
+    var currentNoteId by rememberSaveable { mutableStateOf(noteId) }
     var title by remember { mutableStateOf("") }
     val state = rememberRichTextState()
     var note by remember { mutableStateOf<Note?>(null) }
+    // (title, html) as last stored. Null while an existing note is still loading,
+    // so leaving early can never overwrite it with the empty editor.
+    var lastSaved by remember { mutableStateOf<Pair<String, String>?>(null) }
 
-    LaunchedEffect(noteId) {
-        if (noteId != null) {
-            note = viewModel.getNote(noteId)
-            note?.let {
-                title = it.title
-                state.setHtml(it.content)
-            }
+    LaunchedEffect(Unit) {
+        val id = currentNoteId
+        if (id == null) {
+            lastSaved = "" to state.toHtml()
+            return@LaunchedEffect
+        }
+        val loaded = viewModel.getNote(id) ?: return@LaunchedEffect
+        note = loaded
+        title = loaded.title
+        state.setHtml(loaded.content)
+        lastSaved = loaded.title to state.toHtml()
+    }
+
+    fun autosave() {
+        val saved = lastSaved ?: return
+        val html = state.toHtml()
+        if (title to html == saved) return
+        // Don't create empty notes
+        if (note == null && title.isBlank() && state.annotatedString.text.isBlank()) return
+
+        val toSave = note?.copy(title = title, content = html) ?: Note(title = title, content = html)
+        viewModel.saveNote(toSave)?.let {
+            note = it
+            currentNoteId = it.id
+            lastSaved = title to html
+        }
+    }
+
+    // Autosave instead of a save button. ON_STOP fires when the app is hidden or closed
+    // and when navigating away; onDispose covers back press / leaving the screen.
+    val lifecycleOwner = LocalLifecycleOwner.current
+    DisposableEffect(lifecycleOwner) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_STOP) autosave()
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose {
+            lifecycleOwner.lifecycle.removeObserver(observer)
+            autosave()
         }
     }
 
@@ -77,20 +118,7 @@ fun EditNoteScreen(
         .exclude(WindowInsets.navigationBars)
         .only(WindowInsetsSides.Bottom)
     Scaffold(
-        contentWindowInsets = WindowInsets(0, 0, 0, 0),
-        floatingActionButton = {
-            FloatingActionButton(
-                onClick = {
-                    val newNote = note?.copy(title = title, content = state.toHtml())
-                        ?: Note(title = title, content = state.toHtml())
-                    viewModel.saveNote(newNote)
-                    navController.popBackStack()
-                },
-                modifier = Modifier.windowInsetsPadding(imeNoNav)
-            ) {
-                Icon(Icons.Default.Done, contentDescription = "Save Note")
-            }
-        }
+        contentWindowInsets = WindowInsets(0, 0, 0, 0)
     ) { innerPadding ->
         Column(
             modifier = Modifier

@@ -3,9 +3,11 @@ package com.nobadhabbits.cornytask.features.time_goals
 import com.nobadhabbits.cornytask.data.History
 import com.nobadhabbits.cornytask.data.TimeGoal
 import com.nobadhabbits.cornytask.features.history.HistoryRepository
+import com.nobadhabbits.cornytask.features.user.UserRepository
 import com.google.firebase.auth.FirebaseAuth
-import com.google.firebase.firestore.DocumentReference
+import com.google.firebase.firestore.CollectionReference
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.ListenerRegistration
 import com.google.firebase.firestore.Query
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
@@ -17,64 +19,84 @@ class TimeGoalRepository {
     private val firestore = FirebaseFirestore.getInstance()
     private val auth = FirebaseAuth.getInstance()
     private val historyRepository = HistoryRepository()
+    private val userRepository = UserRepository()
 
-    private val timeGoalsCollection
-        get() = firestore.collection("users").document(auth.currentUser!!.uid).collection("timeGoals")
-
-    private val userDocument
-        get() = firestore.collection("users").document(auth.currentUser!!.uid)
+    // Null when signed out, so callers can bail out instead of crashing.
+    private fun timeGoalsCollection(): CollectionReference? {
+        val uid = auth.currentUser?.uid ?: return null
+        return firestore.collection("users").document(uid).collection("timeGoals")
+    }
 
     fun getTimeGoalsFlow(): Flow<List<TimeGoal>> = callbackFlow {
-        val subscription = timeGoalsCollection
-            .orderBy("createdAt", Query.Direction.DESCENDING)
-            .addSnapshotListener { snapshot, error ->
-                if (error != null) {
-                    close(error)
-                    return@addSnapshotListener
-                }
-                if (snapshot != null) {
-                    val timeGoals = snapshot.toObjects(TimeGoal::class.java)
-                    trySend(timeGoals)
-                }
+        var subscription: ListenerRegistration? = null
+
+        val authListener = FirebaseAuth.AuthStateListener { firebaseAuth ->
+            subscription?.remove()
+            subscription = null
+
+            val user = firebaseAuth.currentUser
+            if (user == null) {
+                trySend(emptyList())
+            } else {
+                subscription = firestore.collection("users").document(user.uid).collection("timeGoals")
+                    .orderBy("createdAt", Query.Direction.DESCENDING)
+                    .addSnapshotListener { snapshot, error ->
+                        if (error != null) {
+                            trySend(emptyList())
+                            return@addSnapshotListener
+                        }
+                        if (snapshot != null) {
+                            trySend(snapshot.toObjects(TimeGoal::class.java))
+                        }
+                    }
             }
-        awaitClose { subscription.remove() }
+        }
+
+        auth.addAuthStateListener(authListener)
+
+        awaitClose {
+            subscription?.remove()
+            auth.removeAuthStateListener(authListener)
+        }
     }
 
     suspend fun getTimeGoal(goalId: String?): TimeGoal? {
-        if(goalId.isNullOrEmpty()) {
+        if (goalId.isNullOrEmpty()) {
             return null
         }
+        val collection = timeGoalsCollection() ?: return null
         return try {
-            timeGoalsCollection.document(goalId).get().await().toObject(TimeGoal::class.java)
+            collection.document(goalId).get().await().toObject(TimeGoal::class.java)
         } catch (e: Exception) {
             null
         }
     }
 
     fun addTimeGoal(title: String, totalTimeMinutes: Long, rewardCoins: Int) {
+        val collection = timeGoalsCollection() ?: return
         val newTimeGoal = TimeGoal(
-            id = timeGoalsCollection.document().id,
+            id = collection.document().id,
             title = title,
             totalTimeMinutes = totalTimeMinutes,
             remainingTimeMinutes = totalTimeMinutes,
             rewardCoins = rewardCoins
         )
-        timeGoalsCollection.document(newTimeGoal.id).set(newTimeGoal)
+        collection.document(newTimeGoal.id).set(newTimeGoal)
     }
 
     fun updateTimeGoal(timeGoal: TimeGoal) {
-        timeGoalsCollection.document(timeGoal.id).set(timeGoal)
+        val collection = timeGoalsCollection() ?: return
+        collection.document(timeGoal.id).set(timeGoal)
     }
 
-
-    fun goalRef(goalId: String): DocumentReference =
-        timeGoalsCollection.document(goalId)
-
     fun deleteTimeGoal(timeGoalId: String) {
-        timeGoalsCollection.document(timeGoalId).delete()
+        val collection = timeGoalsCollection() ?: return
+        collection.document(timeGoalId).delete()
     }
 
     fun addManualTime(timeGoal: TimeGoal, manualTimeMinutes: Long) {
+        if (auth.currentUser == null) return
+
         val wasCompleted = timeGoal.remainingTimeMinutes <= 0
         val newRemainingTime = (timeGoal.remainingTimeMinutes - manualTimeMinutes).coerceAtLeast(0)
         val updatedGoal = timeGoal.copy(remainingTimeMinutes = newRemainingTime)
@@ -91,17 +113,14 @@ class TimeGoalRepository {
 
         val isNowCompleted = newRemainingTime <= 0
         if (!wasCompleted && isNowCompleted) {
-            userDocument.get().addOnSuccessListener { userDoc ->
-                val currentCoins = userDoc.getLong("coins") ?: 0L
-                userDocument.update("coins", currentCoins + timeGoal.rewardCoins)
-                val completionHistory = History(
-                    title = "Completed: ${timeGoal.title}",
-                    rewardCoins = timeGoal.rewardCoins,
-                    type = "TIME_GOAL",
-                    timeGoalId = timeGoal.id
-                )
-                historyRepository.addHistoryEntry(completionHistory)
-            }
+            userRepository.addCoins(timeGoal.rewardCoins)
+            val completionHistory = History(
+                title = "Completed: ${timeGoal.title}",
+                rewardCoins = timeGoal.rewardCoins,
+                type = "TIME_GOAL",
+                timeGoalId = timeGoal.id
+            )
+            historyRepository.addHistoryEntry(completionHistory)
         }
     }
 }

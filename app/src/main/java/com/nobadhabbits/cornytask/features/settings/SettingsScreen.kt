@@ -11,7 +11,9 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -22,27 +24,28 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 
 @Composable
-fun SettingsScreen(onSignOut: () -> Unit, viewModel: SettingsViewModel = viewModel()) {
-    var showConfirmDialog by remember { mutableStateOf(false) }
+fun SettingsScreen(viewModel: SettingsViewModel = viewModel()) {
+    val coins by viewModel.coins.collectAsState()
+    var showResetDialog by remember { mutableStateOf(false) }
 
-    if (showConfirmDialog) {
+    if (showResetDialog) {
         AlertDialog(
-            onDismissRequest = { showConfirmDialog = false },
-            title = { Text("Delete Account") },
-            text = { Text("Are you sure you want to delete your account? This action is irreversible.") },
+            onDismissRequest = { showResetDialog = false },
+            title = { Text("Reset coins") },
+            text = { Text("Set your coins back to 0? Your to-dos, rewards and history are kept.") },
             confirmButton = {
                 Button(
                     onClick = {
-                        viewModel.deleteAccount(onSuccess = onSignOut)
-                        showConfirmDialog = false
+                        viewModel.resetCoins()
+                        showResetDialog = false
                     },
                     colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
                 ) {
-                    Text("Delete")
+                    Text("Reset")
                 }
             },
             dismissButton = {
-                Button(onClick = { showConfirmDialog = false }) {
+                TextButton(onClick = { showResetDialog = false }) {
                     Text("Cancel")
                 }
             }
@@ -56,13 +59,17 @@ fun SettingsScreen(onSignOut: () -> Unit, viewModel: SettingsViewModel = viewMod
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
+        Text(
+            text = coins?.let { "You have $it coins" } ?: "",
+            style = MaterialTheme.typography.titleMedium
+        )
+        Spacer(modifier = Modifier.height(16.dp))
         Button(
-            onClick = { showConfirmDialog = true },
+            onClick = { showResetDialog = true },
+            enabled = (coins ?: 0) != 0,
             colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
         ) {
-            Text("Delete Account")
+            Text("Reset coins")
         }
-        Spacer(modifier = Modifier.height(16.dp))
-        Text("This will delete all of your data, including your to-dos, rewards, and history.")
     }
 }

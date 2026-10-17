@@ -6,9 +6,9 @@ import androidx.activity.ComponentActivity
 import androidx.work.ExistingWorkPolicy
 import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkManager
+import com.nobadhabbits.cornytask.features.login.AuthSession
 import com.nobadhabbits.cornytask.features.login.LoginActivity
 import com.nobadhabbits.cornytask.features.main.MainMenuActivity
-import com.google.android.gms.auth.api.signin.GoogleSignIn
 import com.nobadhabbits.cornytask.features.widget.MoodNotificationReceiver.Companion.EXTRA_OPEN_ADD_MOOD
 import com.nobadhabbits.cornytask.features.widget.OneTimeNotificationSchedulerWorker
 
@@ -16,9 +16,8 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        val account = GoogleSignIn.getLastSignedInAccount(this)
-
-        if (account != null) {
+        // Firebase persists the session across restarts; it is the only login check.
+        if (AuthSession.isSignedIn()) {
             val nextIntent = Intent(this, MainMenuActivity::class.java)
             nextIntent.putExtra("timeGoalId", intent.getStringExtra("timeGoalId"))
             nextIntent.putExtra(EXTRA_OPEN_ADD_MOOD, intent.getBooleanExtra(EXTRA_OPEN_ADD_MOOD, false))

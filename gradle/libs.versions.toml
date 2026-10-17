@@ -1,21 +1,25 @@
 [versions]
-agp = "8.13.1"
+agp = "9.4.1"
 googleApiServicesCalendar = "v3-rev20220715-2.0.0"
-kotlin = "2.2.0"
+kotlin = "2.4.21"
+ksp = "2.3.12"
 coreKtx = "1.10.1"
 junit = "4.13.2"
 junitVersion = "1.1.5"
 espressoCore = "3.5.1"
 lifecycleRuntimeKtx = "2.6.1"
 activityCompose = "1.8.0"
-composeBom = "2024.09.00"
+# Keep this at least as new as the Compose that other libs (e.g. vico) pull in at runtime,
+# otherwise compile and runtime versions differ and the app crashes with NoSuchMethodError.
+composeBom = "2026.03.00"
 firebaseAuth = "23.2.1"
 firebaseFirestore = "25.1.4"
-googleServices = "4.4.2"
+googleServices = "4.5.0"
 coroutinesPlayServices = "1.10.2"
 lifecycleViewmodelCompose = "2.10.0"
 navigationCompose = "2.9.6"
-playServicesAuth = "21.4.0"
+credentials = "1.6.0"
+googleid = "1.2.1"
 material3 = "1.4.0"
 runtimeLivedata = "1.10.1"
 richeditor = "1.0.0-beta03"
@@ -46,7 +50,9 @@ androidx-compose-material3 = { group = "androidx.compose.material3", name = "mat
 firebase-auth-ktx = { group = "com.google.firebase", name = "firebase-auth-ktx", version.ref = "firebaseAuth" }
 firebase-firestore-ktx = { group = "com.google.firebase", name = "firebase-firestore-ktx", version.ref = "firebaseFirestore" }
 kotlinx-coroutines-play-services = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-play-services", version.ref = "coroutinesPlayServices" }
-play-services-auth = { module = "com.google.android.gms:play-services-auth", version.ref = "playServicesAuth" }
+androidx-credentials = { module = "androidx.credentials:credentials", version.ref = "credentials" }
+androidx-credentials-play-services-auth = { module = "androidx.credentials:credentials-play-services-auth", version.ref = "credentials" }
+googleid = { module = "com.google.android.libraries.identity.googleid:googleid", version.ref = "googleid" }
 androidx-material3 = { group = "androidx.compose.material3", name = "material3", version.ref = "material3" }
 androidx-compose-runtime-livedata = { group = "androidx.compose.runtime", name = "runtime-livedata", version.ref = "runtimeLivedata" }
 richeditor = { module = "com.mohamedrejeb.richeditor:richeditor-compose", version.ref = "richeditor" }
@@ -64,6 +70,6 @@ vico-compose-m3 = { group = "com.patrykandpatrick.vico", name = "compose-m3", ve
 vico-views = { group = "com.patrykandpatrick.vico", name = "views", version.ref = "vico" }
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
-kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
 kotlin-compose = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
 google-services = { id = "com.google.gms.google-services", version.ref = "googleServices" }
+ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }

@@ -79,7 +79,12 @@ class TimeGoalService : Service() {
                 val timeGoalId = intent.getStringExtra(EXTRA_TIME_GOAL_ID)
                 val durationMinutes = intent.getLongExtra(EXTRA_DURATION_MINUTES, 0)
                 serviceScope.launch {
-                    val timeGoal = timeGoalRepository.getTimeGoal(timeGoalId) ?: return@launch
+                    // Signed out or goal deleted: nothing to run.
+                    val timeGoal = timeGoalRepository.getTimeGoal(timeGoalId)
+                    if (timeGoal == null) {
+                        if (!isForeground) stopSelf()
+                        return@launch
+                    }
                     if (durationMinutes > 0) {
                         val durationMillis = TimeUnit.MINUTES.toMillis(durationMinutes)
                         TimeGoalManager.startTimer(timeGoal, durationMillis)
