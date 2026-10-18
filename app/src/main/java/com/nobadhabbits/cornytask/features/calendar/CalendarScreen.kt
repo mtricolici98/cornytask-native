@@ -1,7 +1,6 @@
 package com.nobadhabbits.cornytask.features.calendar
 
 import android.content.Intent
-import android.content.res.Configuration
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -41,7 +40,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -56,6 +54,7 @@ import com.kizitonwose.calendar.core.CalendarMonth
 import com.kizitonwose.calendar.core.DayPosition
 import com.kizitonwose.calendar.core.daysOfWeek
 import com.nobadhabbits.cornytask.data.Todo
+import com.nobadhabbits.cornytask.ui.isWideScreen
 import com.nobadhabbits.cornytask.features.todo.AddTodoActivity
 import kotlinx.coroutines.launch
 import java.time.DayOfWeek
@@ -71,7 +70,6 @@ fun CalendarScreen(calendarViewModel: CalendarViewModel = viewModel()) {
     val todosByDate by calendarViewModel.todosByDate.collectAsState()
     val selectedDate by calendarViewModel.selectedDate.collectAsState()
     val context = LocalContext.current
-    val configuration = LocalConfiguration.current
 
     val currentMonth = YearMonth.now()
     val startMonth = currentMonth.minusMonths(100)
@@ -147,7 +145,7 @@ fun CalendarScreen(calendarViewModel: CalendarViewModel = viewModel()) {
         }
     }
 
-    if (configuration.orientation == Configuration.ORIENTATION_LANDSCAPE) {
+    if (isWideScreen()) {
         Row(modifier = Modifier.fillMaxSize()) {
             Box(modifier = Modifier.fillMaxWidth(0.5f)) {
                 calendar()

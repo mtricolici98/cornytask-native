@@ -9,7 +9,6 @@ import androidx.work.WorkManager
 import com.nobadhabbits.cornytask.features.login.AuthSession
 import com.nobadhabbits.cornytask.features.login.LoginActivity
 import com.nobadhabbits.cornytask.features.main.MainMenuActivity
-import com.nobadhabbits.cornytask.features.widget.MoodNotificationReceiver.Companion.EXTRA_OPEN_ADD_MOOD
 import com.nobadhabbits.cornytask.features.widget.OneTimeNotificationSchedulerWorker
 
 class MainActivity : ComponentActivity() {
@@ -18,9 +17,12 @@ class MainActivity : ComponentActivity() {
 
         // Firebase persists the session across restarts; it is the only login check.
         if (AuthSession.isSignedIn()) {
-            val nextIntent = Intent(this, MainMenuActivity::class.java)
-            nextIntent.putExtra("timeGoalId", intent.getStringExtra("timeGoalId"))
-            nextIntent.putExtra(EXTRA_OPEN_ADD_MOOD, intent.getBooleanExtra(EXTRA_OPEN_ADD_MOOD, false))
+            // Pass every extra along (mood / timer deep links), and reuse an already open
+            // main screen instead of stacking a second one on top of it.
+            val nextIntent = Intent(this, MainMenuActivity::class.java).apply {
+                intent.extras?.let { putExtras(it) }
+                flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
+            }
             startActivity(nextIntent)
         } else {
             startActivity(Intent(this, LoginActivity::class.java))

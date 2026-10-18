@@ -3,6 +3,7 @@ package com.nobadhabbits.cornytask.features.time_goals
 import com.nobadhabbits.cornytask.data.History
 import com.nobadhabbits.cornytask.data.TimeGoal
 import com.nobadhabbits.cornytask.features.history.HistoryRepository
+import com.nobadhabbits.cornytask.features.medat.MedatRepository
 import com.nobadhabbits.cornytask.features.user.UserRepository
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.CollectionReference
@@ -20,6 +21,7 @@ class TimeGoalRepository {
     private val auth = FirebaseAuth.getInstance()
     private val historyRepository = HistoryRepository()
     private val userRepository = UserRepository()
+    private val medatRepository = MedatRepository()
 
     // Null when signed out, so callers can bail out instead of crashing.
     private fun timeGoalsCollection(): CollectionReference? {
@@ -72,21 +74,60 @@ class TimeGoalRepository {
         }
     }
 
-    fun addTimeGoal(title: String, totalTimeMinutes: Long, rewardCoins: Int) {
-        val collection = timeGoalsCollection() ?: return
+    /** Returns the new goal's id, or null when signed out. */
+    fun addTimeGoal(
+        title: String,
+        totalTimeMinutes: Long,
+        rewardCoins: Int,
+        medatItemIds: List<String> = emptyList()
+    ): String? {
+        val collection = timeGoalsCollection() ?: return null
         val newTimeGoal = TimeGoal(
             id = collection.document().id,
             title = title,
             totalTimeMinutes = totalTimeMinutes,
             remainingTimeMinutes = totalTimeMinutes,
-            rewardCoins = rewardCoins
+            rewardCoins = rewardCoins,
+            medatItemIds = medatItemIds
         )
         collection.document(newTimeGoal.id).set(newTimeGoal)
+        return newTimeGoal.id
     }
 
     fun updateTimeGoal(timeGoal: TimeGoal) {
         val collection = timeGoalsCollection() ?: return
         collection.document(timeGoal.id).set(timeGoal)
+    }
+
+    /** Changes a goal but keeps the time already done (shrinking the target can finish it). */
+    fun editTimeGoal(timeGoal: TimeGoal, title: String, totalTimeMinutes: Long, rewardCoins: Int) {
+        val doneMinutes = timeGoal.totalTimeMinutes - timeGoal.remainingTimeMinutes
+        val newRemaining = (totalTimeMinutes - doneMinutes).coerceAtLeast(0)
+        updateTimeGoal(
+            timeGoal.copy(
+                title = title,
+                totalTimeMinutes = totalTimeMinutes,
+                remainingTimeMinutes = newRemaining,
+                rewardCoins = rewardCoins
+            )
+        )
+        if (timeGoal.remainingTimeMinutes > 0 && newRemaining <= 0) {
+            userRepository.addCoins(rewardCoins)
+            medatRepository.setDone(timeGoal.medatItemIds, true)
+            historyRepository.addHistoryEntry(
+                History(
+                    title = "Completed: $title",
+                    rewardCoins = rewardCoins,
+                    type = "TIME_GOAL",
+                    timeGoalId = timeGoal.id
+                )
+            )
+        }
+    }
+
+    /** Starts the goal over from zero so it can be earned again (e.g. a weekly goal). */
+    fun restartTimeGoal(timeGoal: TimeGoal) {
+        updateTimeGoal(timeGoal.copy(remainingTimeMinutes = timeGoal.totalTimeMinutes))
     }
 
     fun deleteTimeGoal(timeGoalId: String) {
@@ -114,6 +155,7 @@ class TimeGoalRepository {
         val isNowCompleted = newRemainingTime <= 0
         if (!wasCompleted && isNowCompleted) {
             userRepository.addCoins(timeGoal.rewardCoins)
+            medatRepository.setDone(timeGoal.medatItemIds, true)
             val completionHistory = History(
                 title = "Completed: ${timeGoal.title}",
                 rewardCoins = timeGoal.rewardCoins,

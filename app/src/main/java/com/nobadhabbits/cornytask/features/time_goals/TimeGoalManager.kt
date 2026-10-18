@@ -40,12 +40,14 @@ object TimeGoalManager {
                     if (activeGoalId != currentTimerGoalId) {
                         val goal = timeGoalRepository.getTimeGoal(activeGoalId)
                         if (goal != null) {
+                            val sessionMillis = user.activeTimeGoalDurationMillis
+                                ?: TimeUnit.MINUTES.toMillis(goal.remainingTimeMinutes)
                             val elapsedMillis = System.currentTimeMillis() - startTimeMillis
-                            val remainingMillis = (goal.totalTimeMinutes * 60 * 1000) - elapsedMillis
+                            val remainingMillis = sessionMillis - elapsedMillis
                             if (remainingMillis > 0) {
-                                startTimer(goal, remainingMillis)
+                                resumeTimer(goal, remainingMillis, sessionMillis)
                             } else {
-                                handleFinish(goal, goal.totalTimeMinutes * 60 * 1000)
+                                handleFinish(goal, sessionMillis)
                                 userRepository.clearActiveTimeGoal()
                             }
                         }
@@ -61,24 +63,32 @@ object TimeGoalManager {
 
     fun startTimer(timeGoal: TimeGoal, durationMillis: Long) {
         managerScope.launch {
-            countDownTimer?.cancel()
-            totalDurationMillisForCurrentTimer = durationMillis
-            _timerState.value = TimerState.Running(timeGoal, durationMillis, durationMillis)
-
-            val startTimeMillis = System.currentTimeMillis()
-            userRepository.setActiveTimeGoal(timeGoal.id, startTimeMillis)
-
-            countDownTimer = object : CountDownTimer(durationMillis, 1000) {
-                override fun onTick(millisUntilFinished: Long) {
-                    _timerState.value = TimerState.Running(timeGoal, millisUntilFinished, durationMillis)
-                }
-
-                override fun onFinish() {
-                    _timerState.value = TimerState.Finished(timeGoal, totalDurationMillisForCurrentTimer)
-                    stopTimer()
-                }
-            }.start()
+            runCountdown(timeGoal, durationMillis, durationMillis)
+            userRepository.setActiveTimeGoal(timeGoal.id, System.currentTimeMillis(), durationMillis)
         }
+    }
+
+    // Picks up a timer that was already running (app restart). Keeps the original start
+    // time in Firestore so the time from before the restart still counts.
+    private fun resumeTimer(timeGoal: TimeGoal, remainingMillis: Long, sessionMillis: Long) {
+        runCountdown(timeGoal, remainingMillis, sessionMillis)
+    }
+
+    private fun runCountdown(timeGoal: TimeGoal, remainingMillis: Long, sessionMillis: Long) {
+        countDownTimer?.cancel()
+        totalDurationMillisForCurrentTimer = sessionMillis
+        _timerState.value = TimerState.Running(timeGoal, remainingMillis, sessionMillis)
+
+        countDownTimer = object : CountDownTimer(remainingMillis, 1000) {
+            override fun onTick(millisUntilFinished: Long) {
+                _timerState.value = TimerState.Running(timeGoal, millisUntilFinished, sessionMillis)
+            }
+
+            override fun onFinish() {
+                _timerState.value = TimerState.Finished(timeGoal, totalDurationMillisForCurrentTimer)
+                stopTimer()
+            }
+        }.start()
     }
 
     fun stopTimer() {

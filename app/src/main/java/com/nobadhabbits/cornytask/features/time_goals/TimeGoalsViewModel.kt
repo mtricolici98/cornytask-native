@@ -3,17 +3,12 @@ package com.nobadhabbits.cornytask.features.time_goals
 import android.app.Application
 import android.content.Context
 import android.content.Intent
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.setValue
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.nobadhabbits.cornytask.data.TimeGoal
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
-import kotlinx.coroutines.launch
 
 class TimeGoalsViewModel(application: Application) : AndroidViewModel(application) {
 
@@ -22,71 +17,43 @@ class TimeGoalsViewModel(application: Application) : AndroidViewModel(applicatio
     val timeGoals: StateFlow<List<TimeGoal>> = timeGoalRepository.getTimeGoalsFlow()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
-    val activeTimeGoal: StateFlow<TimeGoal?> = TimeGoalManager.timerState.map {
-        when (it) {
-            is TimeGoalManager.TimerState.Running -> it.goal
-            else -> null
+    val timerState: StateFlow<TimeGoalManager.TimerState> = TimeGoalManager.timerState
+
+    /** Starts a session of [minutes] (at most what's left of the goal). */
+    fun onStartTimer(context: Context, timeGoal: TimeGoal, minutes: Long) {
+        val sessionMinutes = minutes.coerceIn(1, timeGoal.remainingTimeMinutes)
+        val intent = Intent(context, TimeGoalService::class.java).apply {
+            action = TimeGoalService.ACTION_START
+            putExtra(TimeGoalService.EXTRA_TIME_GOAL_ID, timeGoal.id)
+            putExtra(TimeGoalService.EXTRA_DURATION_MINUTES, sessionMinutes)
         }
-    }.stateIn(viewModelScope, SharingStarted.Eagerly, null)
-
-    var isAddingTimeGoal by mutableStateOf(false)
-    var newTimeGoalTitle by mutableStateOf("")
-    var newTimeGoalHours by mutableStateOf("")
-    var newTimeGoalMinutes by mutableStateOf("")
-    var newTimeGoalRewardCoins by mutableStateOf("")
-
-    var selectedTimeGoal by mutableStateOf<TimeGoal?>(null)
-    var showDurationDialog by mutableStateOf(false)
-    var customDuration by mutableStateOf("")
-
-
-    fun onStartTimer(context: Context, selectedTimeGoal: TimeGoal) {
-        selectedTimeGoal?.let { goal ->
-            val intent = Intent(context, TimeGoalService::class.java).apply {
-                action = TimeGoalService.ACTION_START
-                putExtra(TimeGoalService.EXTRA_TIME_GOAL_ID, goal.id)
-                putExtra(TimeGoalService.EXTRA_DURATION_MINUTES, selectedTimeGoal.remainingTimeMinutes)
-            }
-            context.startService(intent)
-            showDurationDialog = false
-        }
+        context.startService(intent)
     }
 
     fun onStopTimer(context: Context) {
         context.startService(Intent(context, TimeGoalService::class.java).apply { action = TimeGoalService.ACTION_STOP })
     }
 
-    fun onAddTimeGoal() {
-        viewModelScope.launch {
-            val hours = newTimeGoalHours.toLongOrNull() ?: 0L
-            val minutes = newTimeGoalMinutes.toLongOrNull() ?: 0L
-            val totalTime = (hours * 60) + minutes
-            val rewardCoins = newTimeGoalRewardCoins.toIntOrNull()
-            if (newTimeGoalTitle.isNotBlank() && totalTime > 0 && rewardCoins != null && rewardCoins > 0) {
-                timeGoalRepository.addTimeGoal(newTimeGoalTitle, totalTime, rewardCoins)
-                newTimeGoalTitle = ""
-                newTimeGoalHours = ""
-                newTimeGoalMinutes = ""
-                newTimeGoalRewardCoins = ""
-                isAddingTimeGoal = false
-            }
-        }
+    fun onAddTimeGoal(title: String, totalMinutes: Long, rewardCoins: Int) {
+        timeGoalRepository.addTimeGoal(title, totalMinutes, rewardCoins)
+    }
+
+    fun onEditTimeGoal(timeGoal: TimeGoal, title: String, totalMinutes: Long, rewardCoins: Int) {
+        timeGoalRepository.editTimeGoal(timeGoal, title, totalMinutes, rewardCoins)
+    }
+
+    fun onRestartTimeGoal(timeGoal: TimeGoal) {
+        timeGoalRepository.restartTimeGoal(timeGoal)
     }
 
     fun onDeleteTimeGoal(timeGoal: TimeGoal) {
-        viewModelScope.launch {
-            timeGoalRepository.deleteTimeGoal(timeGoal.id)
-        }
+        timeGoalRepository.deleteTimeGoal(timeGoal.id)
     }
 
     fun onAddManualTime(timeGoal: TimeGoal, hours: String, minutes: String) {
-        viewModelScope.launch {
-            val manualHours = hours.toLongOrNull() ?: 0L
-            val manualMinutes = minutes.toLongOrNull() ?: 0L
-            val totalManualTime = (manualHours * 60) + manualMinutes
-            if (totalManualTime > 0) {
-                timeGoalRepository.addManualTime(timeGoal, totalManualTime)
-            }
+        val totalManualTime = (hours.toLongOrNull() ?: 0L) * 60 + (minutes.toLongOrNull() ?: 0L)
+        if (totalManualTime > 0) {
+            timeGoalRepository.addManualTime(timeGoal, totalManualTime)
         }
     }
 }

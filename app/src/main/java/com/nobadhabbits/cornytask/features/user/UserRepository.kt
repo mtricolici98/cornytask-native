@@ -102,12 +102,13 @@ class UserRepository {
         firestore.collection("users").document(uid).update("coins", 0)
     }
 
-    fun setActiveTimeGoal(goalId: String, startTimeMillis: Long) {
+    fun setActiveTimeGoal(goalId: String, startTimeMillis: Long, durationMillis: Long) {
         val uid = auth.currentUser?.uid ?: return
         firestore.collection("users").document(uid).update(
             mapOf(
                 "activeTimeGoalId" to goalId,
-                "activeTimeGoalStartTimeMillis" to startTimeMillis
+                "activeTimeGoalStartTimeMillis" to startTimeMillis,
+                "activeTimeGoalDurationMillis" to durationMillis
             )
         )
     }
@@ -117,7 +118,8 @@ class UserRepository {
         firestore.collection("users").document(uid).update(
             mapOf(
                 "activeTimeGoalId" to null,
-                "activeTimeGoalStartTimeMillis" to null
+                "activeTimeGoalStartTimeMillis" to null,
+                "activeTimeGoalDurationMillis" to null
             )
         )
     }

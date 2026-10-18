@@ -7,6 +7,7 @@ import com.google.firebase.firestore.ListenerRegistration
 import com.google.firebase.firestore.Query
 import com.nobadhabbits.cornytask.data.History
 import com.nobadhabbits.cornytask.data.Todo
+import com.nobadhabbits.cornytask.features.medat.MedatRepository
 import com.nobadhabbits.cornytask.features.widget.NotificationScheduler
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
@@ -19,6 +20,7 @@ class TodoRepository(context: Context) {
     private val firestore = FirebaseFirestore.getInstance()
     private val auth = FirebaseAuth.getInstance()
     private val notificationScheduler = NotificationScheduler(context)
+    private val medatRepository = MedatRepository()
 
     fun getTodosFlow(): Flow<List<Todo>> = callbackFlow {
         var snapshotListener: ListenerRegistration? = null
@@ -70,18 +72,34 @@ class TodoRepository(context: Context) {
         }
     }
 
-    fun addTodo(title: String, description: String, rewardCoins: Int, dueDate: Date?) {
-        val uid = auth.currentUser?.uid ?: return
+    /** Returns the new TODO's id, or null when signed out. */
+    fun addTodo(
+        title: String,
+        description: String,
+        rewardCoins: Int,
+        dueDate: Date?,
+        medatItemIds: List<String> = emptyList()
+    ): String? {
+        val uid = auth.currentUser?.uid ?: return null
         val keywords = title.lowercase().split(" ").filter { it.isNotBlank() }
-        val todo = Todo(title = title, description = description, rewardCoins = rewardCoins, keywords = keywords, dueDate = dueDate)
-        firestore.collection("users").document(uid).collection("todos").add(todo).addOnSuccessListener {
-            it.get().addOnSuccessListener { documentSnapshot ->
+        val todo = Todo(
+            title = title,
+            description = description,
+            rewardCoins = rewardCoins,
+            keywords = keywords,
+            dueDate = dueDate,
+            medatItemIds = medatItemIds
+        )
+        val docRef = firestore.collection("users").document(uid).collection("todos").document()
+        docRef.set(todo).addOnSuccessListener {
+            docRef.get().addOnSuccessListener { documentSnapshot ->
                 val createdTodo = documentSnapshot.toObject(Todo::class.java)?.copy(id = documentSnapshot.id)
                 createdTodo?.let { todoWithId ->
                     notificationScheduler.scheduleNotifications(todoWithId)
                 }
             }
         }
+        return docRef.id
     }
 
     suspend fun upsertCalendarEvent(event: Todo) {
@@ -130,6 +148,7 @@ class TodoRepository(context: Context) {
                 notificationScheduler.scheduleNotifications(todo)
             }
         }
+        medatRepository.setDone(todo.medatItemIds, isCompleted)
     }
 
     fun deleteTodo(todo: Todo) {

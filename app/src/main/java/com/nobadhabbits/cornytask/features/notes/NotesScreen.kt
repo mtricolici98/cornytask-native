@@ -47,6 +47,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.nobadhabbits.cornytask.data.Note
+import com.nobadhabbits.cornytask.features.main.Routes
 
 /**
  * Notes grid. Long-press a note to start selecting, tap to add/remove more,
@@ -128,7 +129,7 @@ fun NotesScreen(
         floatingActionButton = {
             if (!selecting) {
                 FloatingActionButton(onClick = {
-                    navController.navigate("edit_note")
+                    navController.navigate(Routes.NEW_NOTE)
                 }) {
                     Icon(Icons.Default.Add, contentDescription = "Add Note")
                 }
@@ -148,7 +149,7 @@ fun NotesScreen(
                         if (selecting) {
                             selectedIds = if (selected) selectedIds - note.id else selectedIds + note.id
                         } else {
-                            navController.navigate("More/edit_note/${note.id}")
+                            navController.navigate(Routes.editNote(note.id))
                         }
                     },
                     onLongClick = {

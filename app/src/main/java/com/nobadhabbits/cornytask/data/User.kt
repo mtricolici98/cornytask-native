@@ -6,5 +6,7 @@ data class User(
     val firstLogin: Boolean = false,
     val fcmToken: String? = null,
     val activeTimeGoalId: String? = null,
-    val activeTimeGoalStartTimeMillis: Long? = null
+    val activeTimeGoalStartTimeMillis: Long? = null,
+    // Length of the running session. Null for timers started before sessions could be shorter.
+    val activeTimeGoalDurationMillis: Long? = null
 )

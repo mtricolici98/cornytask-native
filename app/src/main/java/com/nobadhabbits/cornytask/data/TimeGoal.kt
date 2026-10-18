@@ -9,6 +9,8 @@ data class TimeGoal(
     val totalTimeMinutes: Long = 0,
     val remainingTimeMinutes: Long = 0,
     val rewardCoins: Int = 0,
+    // MedAT plan items this goal stands for; finishing the goal marks them done.
+    val medatItemIds: List<String> = emptyList(),
     @ServerTimestamp
     val createdAt: Date? = null
 )

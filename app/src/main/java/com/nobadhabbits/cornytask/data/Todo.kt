@@ -16,5 +16,7 @@ data class Todo(
     @ServerTimestamp
     val createdAt: Date? = null,
     val historyId: String? = null,
-    val dueDate: Date? = null
+    val dueDate: Date? = null,
+    // MedAT plan items this TODO stands for; completing it marks them done.
+    val medatItemIds: List<String> = emptyList()
 )

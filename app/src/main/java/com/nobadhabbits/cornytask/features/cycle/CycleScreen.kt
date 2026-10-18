@@ -1,9 +1,10 @@
 package com.nobadhabbits.cornytask.features.cycle
 
-import android.content.res.Configuration
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.shape.CircleShape
@@ -16,7 +17,6 @@ import androidx.compose.ui.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -26,6 +26,7 @@ import com.kizitonwose.calendar.compose.*
 import com.kizitonwose.calendar.core.*
 import com.nobadhabbits.cornytask.App
 import com.nobadhabbits.cornytask.data.cycle.CycleType
+import com.nobadhabbits.cornytask.ui.isWideScreen
 import com.nobadhabbits.cornytask.ui.theme.Purple40
 import kotlinx.coroutines.launch
 import nl.dionsegijn.konfetti.core.models.Shape
@@ -55,7 +56,6 @@ fun CycleScreen() {
         firstDayOfWeek = DayOfWeek.MONDAY
     )
 
-    val configuration = LocalConfiguration.current
 
     val calendar = @Composable {
         HorizontalCalendar(
@@ -130,9 +130,9 @@ fun CycleScreen() {
     }
 
 
-    if (configuration.orientation == Configuration.ORIENTATION_LANDSCAPE) {
+    if (isWideScreen()) {
         Row {
-            Box(Modifier.weight(1f)) { calendar() }
+            Box(Modifier.weight(1f).verticalScroll(rememberScrollState())) { calendar() }
             Box(Modifier.weight(1f)) { details() }
         }
     } else {

@@ -147,7 +147,7 @@ class TimeGoalService : Service() {
 
         val notificationIntent = Intent(this, MainMenuActivity::class.java).apply {
             flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
-            putExtra("timeGoalId", timeGoal.id)
+            putExtra(MainMenuActivity.EXTRA_TIME_GOAL_ID, timeGoal.id)
         }
         val pendingIntent = PendingIntent.getActivity(this, 0, notificationIntent, PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT)
 
@@ -174,7 +174,7 @@ class TimeGoalService : Service() {
 
         val notificationIntent = Intent(this, MainMenuActivity::class.java).apply {
             flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
-            putExtra("timeGoalId", timeGoal.id)
+            putExtra(MainMenuActivity.EXTRA_TIME_GOAL_ID, timeGoal.id)
         }
         val pendingIntent = PendingIntent.getActivity(this, 0, notificationIntent, PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT)
 
